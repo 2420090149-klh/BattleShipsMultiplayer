@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { socket } from '../socket';
 import { useGameStore } from '../store/useGameStore';
-import { motion } from 'framer-motion';
 
 const GRID_SIZE = 10;
 
@@ -10,7 +9,6 @@ export default function GamePage() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { room, currentPlayerId, currentTurnId, myFleet, round } = useGameStore();
-  const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   
   useEffect(() => {
     if (room?.gameState === 'FINISHED') {
@@ -45,10 +43,7 @@ export default function GamePage() {
           }
 
           // Check shots fired AT this board
-          const shot = player.shots.find((s: any) => s.x === x && s.y === y && s.targetId === player.id);
-          // Wait, the backend stores shots on the ATTACKER. 
-          // So to find shots on THIS player, we must look at all OTHER players' shots where targetId === player.id
-          let incomingShot = null;
+          let incomingShot: any = null;
           room.players.forEach(p => {
              const s = p.shots.find((s: any) => s.x === x && s.y === y && s.targetId === player.id);
              if (s) incomingShot = s;

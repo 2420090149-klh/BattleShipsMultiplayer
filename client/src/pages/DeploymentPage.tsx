@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { socket } from '../socket';
 import { useGameStore } from '../store/useGameStore';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { RotateCcw, Shuffle, Trash2 } from 'lucide-react';
 
 const GRID_SIZE = 10;
@@ -18,7 +18,7 @@ export default function DeploymentPage() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { room, setMyFleet } = useGameStore();
-  const [deployed, setDeployed] = useState(false);
+  const [, setDeployed] = useState(false);
   const [waitingForOthers, setWaitingForOthers] = useState(false);
 
   // Local state for placement
@@ -62,7 +62,7 @@ export default function DeploymentPage() {
     if (!currentShipDef) return;
 
     if (canPlaceShip(x, y, currentShipDef, isVertical)) {
-      const cells = [];
+      const cells: {x: number, y: number}[] = [];
       for (let i = 0; i < currentShipDef.length; i++) {
         cells.push({ x: isVertical ? x : x + i, y: isVertical ? y + i : y });
       }
@@ -100,7 +100,7 @@ export default function DeploymentPage() {
         }
 
         if (canPlace) {
-          const cells = [];
+          const cells: {x: number, y: number}[] = [];
           for (let i = 0; i < shipDef.length; i++) {
             const cx = vertical ? x : x + i;
             const cy = vertical ? y + i : y;

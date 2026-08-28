@@ -1,9 +1,8 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/useGameStore';
 import { motion } from 'framer-motion';
 
 export default function ResultsPage() {
-  const { roomId } = useParams();
   const navigate = useNavigate();
   const { room, winnerId, currentPlayerId } = useGameStore();
 

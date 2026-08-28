@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 export default function LobbyPage() {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { room, currentPlayerId } = useGameStore();
+  const { room } = useGameStore();
 
   useEffect(() => {
     if (!room) {
