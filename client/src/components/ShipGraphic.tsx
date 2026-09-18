@@ -35,14 +35,11 @@ export const ShipGraphic: React.FC<ShipGraphicProps> = ({ type, isVertical, cell
       );
       break;
     case 'submarine':
-      // 2x2 bounding box. We draw the L-shape using SVG
       content = (
-          <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-lg opacity-90" preserveAspectRatio="none">
-             <path 
-                d={isVertical ? "M 10 10 L 190 10 L 190 190 L 100 190 L 100 100 L 10 100 Z" : "M 10 10 L 190 10 L 190 100 L 100 100 L 100 190 L 10 190 Z"} 
-                fill="#083344" stroke="#0e7490" strokeWidth="10" strokeLinejoin="round" />
-             <circle cx={isVertical ? "145" : "55"} cy={isVertical ? "55" : "55"} r="15" fill="#ef4444" className="animate-pulse" />
-          </svg>
+        <div className="w-full h-full bg-cyan-900 rounded-full flex items-center justify-center relative border border-cyan-700 shadow-[inset_0_0_10px_rgba(0,0,0,0.8)]">
+            <div className={`absolute bg-cyan-950 rounded-full shadow-md ${isVertical ? 'w-2 h-6' : 'w-6 h-2'}`}></div>
+            <div className={`absolute bg-red-500 rounded-full shadow-[0_0_8px_rgba(255,0,0,0.8)] animate-pulse ${isVertical ? 'w-2 h-2 top-2' : 'w-2 h-2 left-2'}`}></div>
+        </div>
       );
       break;
     case 'destroyer':

@@ -12,7 +12,7 @@ const SHIP_TYPES = [
   { id: 'carrier', name: 'CARRIER', shape: [{x:0,y:0}, {x:1,y:0}, {x:2,y:0}, {x:3,y:0}, {x:4,y:0}] },
   { id: 'battleship', name: 'BATTLESHIP', shape: [{x:0,y:0}, {x:1,y:0}, {x:2,y:0}, {x:3,y:0}] },
   { id: 'cruiser', name: 'CRUISER', shape: [{x:0,y:0}, {x:1,y:0}, {x:2,y:0}] },
-  { id: 'submarine', name: 'SUBMARINE', shape: [{x:0,y:0}, {x:1,y:0}, {x:1,y:1}] }, // L-Shape
+  { id: 'submarine', name: 'SUBMARINE', shape: [{x:0,y:0}, {x:1,y:0}, {x:2,y:0}] },
   { id: 'destroyer', name: 'DESTROYER', shape: [{x:0,y:0}, {x:1,y:0}] },
 ];
 
