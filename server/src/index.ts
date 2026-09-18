@@ -61,6 +61,10 @@ io.on('connection', (socket) => {
     gameManager.handleAttack(socket, data);
   });
 
+  socket.on('game:setTarget', (data) => {
+    gameManager.handleSetTarget(socket, data);
+  });
+
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
     roomManager.handleDisconnect(socket, io);

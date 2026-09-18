@@ -21,6 +21,10 @@ export interface Room {
   maxPlayers: number;
   gameState: 'LOBBY' | 'DEPLOYMENT' | 'PLAYING' | 'FINISHED';
   players: Player[];
+  currentTurnIndex: number;
+  turnMisses: string[];
+  currentTargetId?: string | null;
+  round: number;
 }
 
 interface GameStore {

@@ -46,6 +46,19 @@ export class GameManager {
     }
   }
 
+  handleSetTarget(socket: Socket, data: { targetId: string | null }) {
+    const room = this.roomManager.getRoomForSocket(socket.id);
+    if (!room || room.gameState !== 'PLAYING') return;
+    const player = room.players.find(p => p.socketId === socket.id);
+    if (!player) return;
+
+    // Only allow setting target if it's the player's turn
+    if (room.players[room.currentTurnIndex].id !== player.id) return;
+
+    room.currentTargetId = data.targetId;
+    this.io.to(room.roomId).emit('room:update', this.roomManager.sanitizeRoom(room));
+  }
+
   handleAttack(socket: Socket, data: { targetId: string; x: number; y: number }) {
     const room = this.roomManager.getRoomForSocket(socket.id);
     if (!room || room.gameState !== 'PLAYING') return;
@@ -134,6 +147,7 @@ export class GameManager {
             }
         }
         room.currentTurnIndex = nextTurnIndex;
+        room.currentTargetId = null;
     }
 
     const alivePlayers = room.players.filter(p => !p.eliminated);

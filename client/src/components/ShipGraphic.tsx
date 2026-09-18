@@ -1,12 +1,11 @@
-import React from 'react';
-
 interface ShipGraphicProps {
   type: string;
   isVertical: boolean;
   cells?: {x: number, y: number}[];
+  isDestroyed?: boolean;
 }
 
-export const ShipGraphic: React.FC<ShipGraphicProps> = ({ type, isVertical, cells }) => {
+export const ShipGraphic: React.FC<ShipGraphicProps> = ({ type, isVertical, cells, isDestroyed }) => {
   let content = null;
 
   switch(type) {
@@ -69,7 +68,7 @@ export const ShipGraphic: React.FC<ShipGraphicProps> = ({ type, isVertical, cell
   }
 
   return (
-    <div style={gridStyle} className={`w-full h-full pointer-events-none drop-shadow-2xl z-10 p-1`}>
+    <div style={gridStyle} className={`w-full h-full pointer-events-none drop-shadow-2xl z-10 p-1 transition-all duration-700 ${isDestroyed ? 'brightness-50 sepia-[.3] hue-rotate-[-10deg] grayscale-[0.8]' : ''}`}>
       {content}
     </div>
   );
