@@ -3,9 +3,11 @@ interface ShipGraphicProps {
   isVertical: boolean;
   cells?: {x: number, y: number}[];
   isDestroyed?: boolean;
+  hitIndices?: number[];
+  size?: number;
 }
 
-export const ShipGraphic: React.FC<ShipGraphicProps> = ({ type, isVertical, cells, isDestroyed }) => {
+export const ShipGraphic: React.FC<ShipGraphicProps> = ({ type, isVertical, cells, isDestroyed, hitIndices, size }) => {
   let content = null;
 
   switch(type) {
@@ -64,10 +66,29 @@ export const ShipGraphic: React.FC<ShipGraphicProps> = ({ type, isVertical, cell
       };
   }
 
+  const hitsOverlay = size && hitIndices && hitIndices.length > 0 ? (
+      <div 
+          className="absolute inset-0 grid z-20"
+          style={{ 
+              gridTemplateColumns: isVertical ? '1fr' : `repeat(${size}, 1fr)`, 
+              gridTemplateRows: isVertical ? `repeat(${size}, 1fr)` : '1fr' 
+          }}
+      >
+          {Array.from({ length: size }).map((_, i) => (
+             <div key={i} className="flex items-center justify-center relative">
+                 {hitIndices.includes(i) && (
+                     <div className="absolute w-3/4 h-3/4 bg-orange-500/80 rounded-full shadow-[0_0_10px_rgba(255,100,0,0.9)] animate-pulse mix-blend-screen" />
+                 )}
+             </div>
+          ))}
+      </div>
+  ) : null;
+
   return (
     <div style={gridStyle} className={`relative min-w-0 min-h-0 w-full h-full pointer-events-none drop-shadow-2xl z-10 transition-all duration-700 ${isDestroyed ? 'brightness-50 sepia-[.3] hue-rotate-[-10deg] grayscale-[0.8]' : ''}`}>
       <div className="absolute inset-0 w-full h-full p-1">
         {content}
+        {hitsOverlay}
       </div>
     </div>
   );

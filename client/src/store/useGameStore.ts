@@ -12,6 +12,7 @@ export interface Player {
   remainingShips: number;
   eliminated: boolean;
   isHost: boolean;
+  publicFleet?: { type: string, sunk: boolean, size: number, hitIndices: number[] }[];
   fleet?: any[]; // Only populated for the current user during game
 }
 

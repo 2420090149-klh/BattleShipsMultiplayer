@@ -31,6 +31,21 @@ export default function GamePage() {
     socket.emit('game:attack', { targetId, x, y });
   };
 
+  const renderMiniFleet = (player: any) => {
+      const fleet = player.publicFleet || (player.id === currentPlayerId ? myFleet?.map(s => ({ type: s.type, sunk: s.sunk, size: s.cells.length, hitIndices: s.hits.map((h:any) => s.cells.findIndex((c:any) => c.x === h.x && c.y === h.y)).filter((i:any) => i !== -1) })) : null);
+      if (!fleet) return null;
+      
+      return (
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-4 w-full">
+              {fleet.map((ship: any, idx: number) => (
+                  <div key={idx} className={`w-12 h-6 md:w-16 md:h-8 relative ${ship.sunk ? 'opacity-30 grayscale' : ''}`}>
+                      <ShipGraphic type={ship.type} isVertical={false} isDestroyed={ship.sunk} size={ship.size} hitIndices={ship.hitIndices} />
+                  </div>
+              ))}
+          </div>
+      );
+  };
+
   const renderGrid = (player: any, isMe: boolean) => {
     return (
       <div className="relative inline-grid grid-cols-10 gap-0 border-2 border-white/20 bg-navy-900/50 p-1 md:p-2 rounded-xl shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
@@ -132,37 +147,12 @@ export default function GamePage() {
                   <Shield size={14} /> 👁 {hideShips ? 'Ships Hidden' : 'Hide Ships'}
               </button>
            </h2>
-           <div className="glass-panel p-4 rounded-xl mb-6">
+           <div className="glass-panel border-4 p-4 rounded-xl mb-6 shadow-xl border-neon-blue/30 w-full flex flex-col items-center">
              {me && renderGrid(me, true)}
-           </div>
-           
-           {/* Fleet Status Panel */}
-           <div className="w-full glass-panel p-4 rounded-xl flex flex-col gap-3 overflow-y-auto max-h-[30vh]">
-              <h3 className="text-sm tracking-widest text-white/50 border-b border-white/10 pb-2 mb-2">FLEET STATUS</h3>
-              {me?.eliminated ? (
-                  <div className="text-neon-red font-bold tracking-widest text-xl text-center py-4">FLEET DESTROYED</div>
-              ) : myFleet && myFleet.map((ship, idx) => {
-                  const name = ship.type.toUpperCase();
-                  const size = ship.cells.length;
-                  const hits = ship.hits.length;
-                  const sunk = ship.sunk;
-                  
-                  return (
-                      <div key={idx} className={`flex items-center justify-between p-2 rounded border ${sunk ? 'border-red-900/50 bg-red-950/20 opacity-60 grayscale' : 'border-white/5 bg-white/5'}`}>
-                          <div className="w-16 h-8 shrink-0 relative mr-3">
-                              <ShipGraphic type={ship.type} isVertical={false} isDestroyed={sunk} />
-                          </div>
-                          <div className="flex-1 flex flex-col">
-                              <span className="font-bold text-sm tracking-widest">{name}</span>
-                              <span className="text-xs text-white/50">{size} cells</span>
-                          </div>
-                          <div className="flex flex-col items-end">
-                              <span className={`font-mono font-bold ${sunk ? 'text-red-500' : hits > 0 ? 'text-orange-400' : 'text-neon-blue'}`}>{hits}/{size}</span>
-                              {sunk && <span className="text-[10px] text-red-500 font-bold tracking-widest">DESTROYED</span>}
-                          </div>
-                      </div>
-                  );
-              })}
+             {me?.eliminated && (
+                <div className="mt-4 text-neon-red font-bold tracking-widest text-xl text-center py-4">FLEET DESTROYED</div>
+             )}
+             {me && renderMiniFleet(me)}
            </div>
         </div>
 
@@ -181,7 +171,7 @@ export default function GamePage() {
                     onMouseEnter={() => canAttack && socket.emit('game:setTarget', { targetId: opp.id })}
                     onMouseLeave={() => canAttack && socket.emit('game:setTarget', { targetId: null })}
                     onClick={() => canAttack && socket.emit('game:setTarget', { targetId: opp.id })}
-                    className={`relative p-4 rounded-xl flex flex-col items-center transition-all duration-300 ease-in-out ${opp.eliminated ? 'opacity-50 grayscale bg-black/50' : isTargeted ? 'bg-red-950/80 shadow-[0_0_30px_rgba(255,0,0,0.3)] border-2 border-red-500 scale-105 z-10' : 'glass-panel opacity-80 hover:opacity-100 cursor-pointer'}`}
+                    className={`relative p-4 rounded-xl flex flex-col items-center transition-all duration-300 ease-in-out border-4 ${opp.eliminated ? 'opacity-50 grayscale bg-black/50 border-white/5' : isTargeted ? 'bg-red-950/80 shadow-[0_0_30px_rgba(255,0,0,0.3)] border-red-500 scale-105 z-10' : 'glass-panel opacity-80 hover:opacity-100 cursor-pointer border-white/10 hover:border-neon-blue/30'}`}
                  >
                     {isTargeted && isMyTurn && (
                         <div className="absolute -top-4 bg-red-600 text-white font-bold tracking-widest px-4 py-1 rounded shadow-lg text-sm flex items-center gap-2">
@@ -197,8 +187,9 @@ export default function GamePage() {
                             {hasMissed ? 'TARGET LOST (MISSED)' : isTargeted ? 'LOCKING ON...' : 'TARGET ACQUIRED'}
                         </div>
                     )}
-                    <div className={`transition-all duration-300 ${!isMyTurn && !opp.eliminated ? 'opacity-50 pointer-events-none grayscale-[50%]' : ''}`}>
+                    <div className={`transition-all duration-300 flex flex-col items-center w-full ${!isMyTurn && !opp.eliminated ? 'opacity-50 pointer-events-none grayscale-[50%]' : ''}`}>
                        {renderGrid(opp, false)}
+                       {renderMiniFleet(opp)}
                     </div>
                     {opp.eliminated && <div className="mt-2 text-neon-red font-bold">ELIMINATED</div>}
                  </div>

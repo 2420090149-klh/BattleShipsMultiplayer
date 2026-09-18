@@ -123,14 +123,14 @@ export class RoomManager {
     this.removePlayer(socket.id, socket);
   }
 
-  setPlayerReady(socket: Socket, ready: boolean) {
+  setPlayerReady(socket: Socket, ready: boolean, io: any) {
     const room = this.getRoomForSocket(socket.id);
     if (!room || room.gameState !== 'LOBBY') return;
 
     const player = room.players.find(p => p.socketId === socket.id);
     if (player) {
       player.ready = ready;
-      this.io.to(room.roomId).emit('room:update', this.sanitizeRoom(room));
+      io.to(room.roomId).emit('room:update', this.sanitizeRoom(room));
     }
   }
 
@@ -218,7 +218,13 @@ export class RoomManager {
         shots: p.shots,
         remainingShips: p.remainingShips,
         eliminated: p.eliminated,
-        isHost: p.isHost
+        isHost: p.isHost,
+        publicFleet: p.fleet ? p.fleet.map(s => ({
+            type: s.type,
+            sunk: s.sunk,
+            size: s.cells.length,
+            hitIndices: s.hits.map(h => s.cells.findIndex(c => c.x === h.x && c.y === h.y)).filter(i => i !== -1)
+        })) : []
       }))
     };
   }

@@ -45,7 +45,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('room:ready', (data) => {
-    roomManager.setPlayerReady(socket, data);
+    roomManager.setPlayerReady(socket, data, io);
   });
 
   socket.on('room:start', () => {
