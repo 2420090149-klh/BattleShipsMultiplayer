@@ -68,8 +68,10 @@ export const ShipGraphic: React.FC<ShipGraphicProps> = ({ type, isVertical, cell
   }
 
   return (
-    <div style={gridStyle} className={`w-full h-full pointer-events-none drop-shadow-2xl z-10 p-1 transition-all duration-700 ${isDestroyed ? 'brightness-50 sepia-[.3] hue-rotate-[-10deg] grayscale-[0.8]' : ''}`}>
-      {content}
+    <div style={gridStyle} className={`relative min-w-0 min-h-0 w-full h-full pointer-events-none drop-shadow-2xl z-10 transition-all duration-700 ${isDestroyed ? 'brightness-50 sepia-[.3] hue-rotate-[-10deg] grayscale-[0.8]' : ''}`}>
+      <div className="absolute inset-0 w-full h-full p-1">
+        {content}
+      </div>
     </div>
   );
 };
