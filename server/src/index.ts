@@ -24,7 +24,12 @@ const roomManager = new RoomManager();
 const gameManager = new GameManager(io, roomManager);
 
 io.on('connection', (socket) => {
-  console.log(`User connected: ${socket.id}`);
+  const sessionId = socket.handshake.auth.sessionId;
+  console.log(`User connected: ${socket.id} (Session: ${sessionId})`);
+
+  if (sessionId) {
+      roomManager.attemptReconnect(socket, sessionId);
+  }
 
   // Room Events
   socket.on('room:create', (data) => {

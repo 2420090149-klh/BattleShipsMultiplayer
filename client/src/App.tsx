@@ -9,13 +9,22 @@ import GamePage from './pages/GamePage';
 import ResultsPage from './pages/ResultsPage';
 
 function App() {
-  const { setSocket, setRoom, setCurrentTurnId, setRound, setWinnerId } = useGameStore();
+  const { sessionId, setSocket, setRoom, setCurrentTurnId, setRound, setWinnerId, setCurrentPlayerId, setMyFleet } = useGameStore();
 
   useEffect(() => {
+    socket.auth = { sessionId };
     socket.connect();
     setSocket(socket);
 
     // Global Socket Listeners
+    socket.on('session:restored', (data) => {
+        setRoom(data.room);
+        setCurrentPlayerId(data.playerId);
+        if (data.myFleet) setMyFleet(data.myFleet);
+        setCurrentTurnId(data.room.currentTurnIndex !== undefined ? data.room.players[data.room.currentTurnIndex]?.id : null);
+        setRound(data.room.round);
+    });
+
     socket.on('room:joined', (room) => {
       setRoom(room);
     });

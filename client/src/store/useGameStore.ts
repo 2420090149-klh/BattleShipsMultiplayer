@@ -27,6 +27,9 @@ interface GameStore {
   socket: any | null;
   setSocket: (socket: any) => void;
   
+  sessionId: string;
+  setSessionId: (id: string) => void;
+
   room: Room | null;
   setRoom: (room: Room) => void;
 
@@ -48,12 +51,26 @@ interface GameStore {
   resetStore: () => void;
 }
 
-export const useGameStore = create<GameStore>((set) => ({
-  socket: null,
-  setSocket: (socket) => set({ socket }),
-  
-  room: null,
-  setRoom: (room) => set({ room }),
+export const useGameStore = create<GameStore>((set) => {
+  // Get or create session ID
+  let initialSessionId = localStorage.getItem('armada_session_id');
+  if (!initialSessionId) {
+      initialSessionId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('armada_session_id', initialSessionId);
+  }
+
+  return {
+    socket: null,
+    setSocket: (socket) => set({ socket }),
+    
+    sessionId: initialSessionId,
+    setSessionId: (id) => {
+        localStorage.setItem('armada_session_id', id);
+        set({ sessionId: id });
+    },
+
+    room: null,
+    setRoom: (room) => set({ room }),
 
   currentPlayerId: null,
   setCurrentPlayerId: (id) => set({ currentPlayerId: id }),
@@ -76,5 +93,5 @@ export const useGameStore = create<GameStore>((set) => ({
     currentTurnId: null, 
     round: 1, 
     winnerId: null 
-  }),
-}));
+  });
+});

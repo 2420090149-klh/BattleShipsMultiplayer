@@ -7,9 +7,11 @@ export class RoomManager {
 
   createRoom(socket: Socket, data: { nickname: string; avatar: string; color: string; maxPlayers: number }) {
     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const sessionId = socket.handshake.auth.sessionId;
     
     const host: Player = {
       id: socket.id,
+      sessionId,
       socketId: socket.id,
       nickname: data.nickname,
       avatar: data.avatar,
@@ -57,8 +59,11 @@ export class RoomManager {
       return socket.emit('room:error', { message: 'MATCH ALREADY IN PROGRESS' });
     }
 
+    const sessionId = socket.handshake.auth.sessionId;
+    
     const player: Player = {
       id: socket.id,
+      sessionId,
       socketId: socket.id,
       nickname: data.nickname,
       avatar: data.avatar,
@@ -80,26 +85,59 @@ export class RoomManager {
     socket.to(room.roomId).emit('room:update', this.sanitizeRoom(room));
   }
 
+  attemptReconnect(socket: Socket, sessionId: string) {
+    // Find if this session belongs to a player in any active room
+    for (const [roomId, room] of this.rooms.entries()) {
+        const player = room.players.find(p => p.sessionId === sessionId);
+        if (player) {
+            // Found a disconnected/active session! Restore it.
+            const oldSocketId = player.socketId;
+            this.socketToRoom.delete(oldSocketId);
+            
+            player.socketId = socket.id;
+            player.connected = true;
+            this.socketToRoom.set(socket.id, roomId);
+            socket.join(roomId);
+
+            if (room.hostId === oldSocketId) {
+                room.hostId = player.id; // ensure host ID matches the persistent player ID
+            }
+
+            console.log(`[Reconnect] Restored session ${sessionId} for player ${player.nickname} in room ${roomId}`);
+            
+            // Notify the reconnected player
+            socket.emit('session:restored', {
+                room: this.sanitizeRoom(room),
+                playerId: player.id,
+                myFleet: player.fleet
+            });
+            
+            // Notify others
+            socket.to(roomId).emit('room:update', this.sanitizeRoom(room));
+            return;
+        }
+    }
+  }
+
   leaveRoom(socket: Socket) {
     this.removePlayer(socket.id, socket);
   }
 
   setPlayerReady(socket: Socket, ready: boolean) {
     const room = this.getRoomForSocket(socket.id);
-    if (!room) return;
+    if (!room || room.gameState !== 'LOBBY') return;
 
-    const player = room.players.find(p => p.id === socket.id);
+    const player = room.players.find(p => p.socketId === socket.id);
     if (player) {
       player.ready = ready;
-      socket.to(room.roomId).emit('room:update', this.sanitizeRoom(room));
-      // send to sender as well to confirm
-      socket.emit('room:update', this.sanitizeRoom(room));
+      this.io.to(room.roomId).emit('room:update', this.sanitizeRoom(room));
     }
   }
 
   startMatch(socket: Socket, io: any) {
     const room = this.getRoomForSocket(socket.id);
-    if (!room || room.hostId !== socket.id) return;
+    const player = room?.players.find(p => p.socketId === socket.id);
+    if (!room || room.hostId !== player?.id) return;
 
     if (room.players.length < 2) {
       return socket.emit('room:error', { message: 'Need at least 2 commanders to start.' });
@@ -124,7 +162,7 @@ export class RoomManager {
       io.to(room.roomId).emit('room:update', this.sanitizeRoom(room));
     } else {
       // In game - mark as disconnected but don't remove
-      const player = room.players.find(p => p.id === socket.id);
+      const player = room.players.find(p => p.socketId === socket.id);
       if (player) {
         player.connected = false;
         io.to(room.roomId).emit('game:playerDisconnected', { playerId: player.id });
@@ -139,14 +177,14 @@ export class RoomManager {
     const room = this.rooms.get(roomId);
     if (!room) return;
 
-    room.players = room.players.filter(p => p.id !== socketId);
+    room.players = room.players.filter(p => p.socketId !== socketId);
     this.socketToRoom.delete(socketId);
     socket.leave(roomId);
 
     if (room.players.length === 0) {
       this.rooms.delete(roomId);
-    } else if (room.hostId === socketId) {
-      // reassign host
+    } else if (room.hostId === socketId || !room.players.find(p => p.id === room.hostId)) {
+      // reassign host if host left
       room.hostId = room.players[0].id;
       room.players[0].isHost = true;
     }

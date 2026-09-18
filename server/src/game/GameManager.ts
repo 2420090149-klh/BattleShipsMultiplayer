@@ -13,7 +13,7 @@ export class GameManager {
         return;
     }
 
-    const player = room.players.find(p => p.id === socket.id);
+    const player = room.players.find(p => p.socketId === socket.id);
     if (!player) {
         console.log(`[deployFleet] Failed: Player not found`);
         return;
@@ -51,7 +51,7 @@ export class GameManager {
     if (!room || room.gameState !== 'PLAYING') return;
 
     const currentPlayer = room.players[room.currentTurnIndex];
-    if (currentPlayer.id !== socket.id) {
+    if (currentPlayer.socketId !== socket.id) {
       return socket.emit('game:error', { message: 'AWAITING COMMAND (Not your turn)' });
     }
 

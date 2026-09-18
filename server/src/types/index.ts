@@ -1,5 +1,6 @@
 export interface Player {
   id: string;
+  sessionId: string;
   socketId: string;
   nickname: string;
   avatar: string;
