@@ -93,5 +93,6 @@ export const useGameStore = create<GameStore>((set) => {
     currentTurnId: null, 
     round: 1, 
     winnerId: null 
-  });
+  })
+  };
 });

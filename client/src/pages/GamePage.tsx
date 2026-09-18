@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { socket } from '../socket';
 import { useGameStore } from '../store/useGameStore';
+import { ShipGraphic } from '../components/ShipGraphic';
 
 const GRID_SIZE = 10;
 
@@ -29,7 +30,7 @@ export default function GamePage() {
 
   const renderGrid = (player: any, isMe: boolean) => {
     return (
-      <div className="grid grid-cols-10 gap-1 bg-navy-800 p-1 border border-white/10 shrink-0">
+      <div className="relative inline-grid grid-cols-10 gap-0 border-2 border-white/20 bg-navy-900/50 p-1 md:p-2 rounded-xl">
         {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, i) => {
           const x = i % GRID_SIZE;
           const y = Math.floor(i / GRID_SIZE);
@@ -54,9 +55,10 @@ export default function GamePage() {
           }
 
           let bgColor = 'bg-transparent';
-          if (cellState === 'hit') bgColor = 'bg-neon-red';
-          else if (cellState === 'miss') bgColor = 'bg-white/30';
-          else if (hasShip) bgColor = 'bg-neon-blue/40';
+          let zIndex = 'z-0';
+          if (cellState === 'hit') { bgColor = 'bg-neon-red shadow-[0_0_15px_rgba(255,0,0,0.8)]'; zIndex = 'z-20'; }
+          else if (cellState === 'miss') { bgColor = 'bg-white/40'; zIndex = 'z-20'; }
+          else if (hasShip) { bgColor = 'bg-neon-blue/10'; zIndex = 'z-0'; }
 
           const canAttackThisOpponent = isMyTurn && !(room as any).turnMisses?.includes(player.id);
 
@@ -64,9 +66,24 @@ export default function GamePage() {
             <div 
               key={i} 
               onClick={() => !isMe && !incomingShot && canAttackThisOpponent && handleAttack(player.id, x, y)}
-              className={`w-6 h-6 md:w-8 md:h-8 border border-white/5 transition-all ${bgColor} ${!isMe && !incomingShot && canAttackThisOpponent ? 'hover:bg-white/20 cursor-crosshair' : ''}`}
+              className={`relative ${zIndex} w-6 h-6 md:w-8 md:h-8 border border-white/5 transition-all ${bgColor} ${!isMe && !incomingShot && canAttackThisOpponent ? 'hover:bg-white/20 cursor-crosshair' : ''}`}
             ></div>
           );
+        })}
+        {/* Render Ships as Graphics */}
+        {player.fleet?.map((ship: any, idx: number) => {
+           // For opponents, only show if sunk or eliminated
+           if (!isMe && !ship.sunk && !player.eliminated) return null;
+           
+           const minX = Math.min(...ship.cells.map((c:any) => c.x));
+           const maxX = Math.max(...ship.cells.map((c:any) => c.x));
+           const minY = Math.min(...ship.cells.map((c:any) => c.y));
+           const maxY = Math.max(...ship.cells.map((c:any) => c.y));
+           const isVerticalPlaced = (maxY - minY) > (maxX - minX);
+           
+           return (
+              <ShipGraphic key={`ship-${idx}`} type={ship.type} isVertical={isVerticalPlaced} cells={ship.cells} />
+           );
         })}
       </div>
     );

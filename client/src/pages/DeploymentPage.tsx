@@ -5,14 +5,26 @@ import { useGameStore } from '../store/useGameStore';
 import { motion } from 'framer-motion';
 import { RotateCcw, Shuffle, Trash2 } from 'lucide-react';
 
+import { ShipGraphic } from '../components/ShipGraphic';
+
 const GRID_SIZE = 10;
 const SHIP_TYPES = [
-  { id: 'carrier', name: 'Carrier', length: 5 },
-  { id: 'battleship', name: 'Battleship', length: 4 },
-  { id: 'cruiser', name: 'Cruiser', length: 3 },
-  { id: 'submarine', name: 'Submarine', length: 3 },
-  { id: 'destroyer', name: 'Destroyer', length: 2 },
+  { id: 'carrier', name: 'CARRIER', shape: [{x:0,y:0}, {x:1,y:0}, {x:2,y:0}, {x:3,y:0}, {x:4,y:0}] },
+  { id: 'battleship', name: 'BATTLESHIP', shape: [{x:0,y:0}, {x:1,y:0}, {x:2,y:0}, {x:3,y:0}] },
+  { id: 'cruiser', name: 'CRUISER', shape: [{x:0,y:0}, {x:1,y:0}, {x:2,y:0}] },
+  { id: 'submarine', name: 'SUBMARINE', shape: [{x:0,y:0}, {x:1,y:0}, {x:1,y:1}] }, // L-Shape
+  { id: 'destroyer', name: 'DESTROYER', shape: [{x:0,y:0}, {x:1,y:0}] },
 ];
+
+const rotateShape = (shape: {x:number, y:number}[], isVertical: boolean) => {
+  if (!isVertical) return shape;
+  // Rotate 90 degrees: (x, y) -> (-y, x)
+  const rotated = shape.map(c => ({ x: -c.y, y: c.x }));
+  // Normalize so minX and minY are 0
+  const minX = Math.min(...rotated.map(c => c.x));
+  const minY = Math.min(...rotated.map(c => c.y));
+  return rotated.map(c => ({ x: c.x - minX, y: c.y - minY }));
+};
 
 export default function DeploymentPage() {
   const { roomId } = useParams();
@@ -43,12 +55,11 @@ export default function DeploymentPage() {
   }, [unplacedShips, selectedShipId, currentShipDef]);
 
   const canPlaceShip = (x: number, y: number, shipDef: typeof SHIP_TYPES[0], vertical: boolean) => {
-    if (vertical && y + shipDef.length > GRID_SIZE) return false;
-    if (!vertical && x + shipDef.length > GRID_SIZE) return false;
-
-    for (let i = 0; i < shipDef.length; i++) {
-      const cx = vertical ? x : x + i;
-      const cy = vertical ? y + i : y;
+    const rotated = rotateShape(shipDef.shape, vertical);
+    for (const cell of rotated) {
+      const cx = x + cell.x;
+      const cy = y + cell.y;
+      if (cx < 0 || cx >= GRID_SIZE || cy < 0 || cy >= GRID_SIZE) return false;
       if (isCellOccupied(cx, cy)) return false;
     }
     return true;
@@ -62,15 +73,11 @@ export default function DeploymentPage() {
     if (!currentShipDef) return;
 
     if (canPlaceShip(x, y, currentShipDef, isVertical)) {
-      const cells: {x: number, y: number}[] = [];
-      for (let i = 0; i < currentShipDef.length; i++) {
-        cells.push({ x: isVertical ? x : x + i, y: isVertical ? y + i : y });
-      }
+      const rotated = rotateShape(currentShipDef.shape, isVertical);
+      const cells: {x: number, y: number}[] = rotated.map(c => ({ x: x + c.x, y: y + c.y }));
       
-      setPlacedShips(prev => [...prev, {
-        id: Math.random().toString(),
+      setPlacedShips([...placedShips, {
         type: currentShipDef.id,
-        length: currentShipDef.length,
         cells,
         hits: [],
         sunk: false
@@ -79,38 +86,36 @@ export default function DeploymentPage() {
   };
 
   const generateRandomFleet = () => {
-    const newFleet: any[] = [];
-    const grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(false));
+    let newFleet: any[] = [];
+    
+    // Helper to check collision with ALREADY PLACED random ships
+    const isOccupiedRandom = (x: number, y: number, currentFleet: any[]) => {
+      return currentFleet.some(ship => ship.cells.some((c: any) => c.x === x && c.y === y));
+    };
 
     SHIP_TYPES.forEach(shipDef => {
       let placed = false;
       while (!placed) {
         const vertical = Math.random() > 0.5;
-        const x = Math.floor(Math.random() * (vertical ? GRID_SIZE : GRID_SIZE - shipDef.length));
-        const y = Math.floor(Math.random() * (vertical ? GRID_SIZE - shipDef.length : GRID_SIZE));
+        const x = Math.floor(Math.random() * GRID_SIZE);
+        const y = Math.floor(Math.random() * GRID_SIZE);
+
+        const rotated = rotateShape(shipDef.shape, vertical);
         
         let canPlace = true;
-        for (let i = 0; i < shipDef.length; i++) {
-          const cx = vertical ? x : x + i;
-          const cy = vertical ? y + i : y;
-          if (grid[cy][cx]) {
-            canPlace = false;
-            break;
-          }
+        for (const cell of rotated) {
+            const cx = x + cell.x;
+            const cy = y + cell.y;
+            if (cx < 0 || cx >= GRID_SIZE || cy < 0 || cy >= GRID_SIZE || isOccupiedRandom(cx, cy, newFleet)) {
+                canPlace = false;
+                break;
+            }
         }
 
         if (canPlace) {
-          const cells: {x: number, y: number}[] = [];
-          for (let i = 0; i < shipDef.length; i++) {
-            const cx = vertical ? x : x + i;
-            const cy = vertical ? y + i : y;
-            grid[cy][cx] = true;
-            cells.push({ x: cx, y: cy });
-          }
+          const cells: {x: number, y: number}[] = rotated.map(c => ({ x: x + c.x, y: y + c.y }));
           newFleet.push({
-            id: Math.random().toString(),
             type: shipDef.id,
-            length: shipDef.length,
             cells,
             hits: [],
             sunk: false
@@ -133,26 +138,59 @@ export default function DeploymentPage() {
     setWaitingForOthers(true);
   };
 
-  // Helper to determine if a cell is part of the current hover preview
-  const getHoverState = (x: number, y: number) => {
-    if (!currentShipDef || !hoverPos || waitingForOthers) return null;
-    
-    // Check if within bounds of the hovering ship
-    let isHovering = false;
-    if (isVertical) {
-        if (x === hoverPos.x && y >= hoverPos.y && y < hoverPos.y + currentShipDef.length) {
-            isHovering = true;
+  const renderGrid = () => {
+    const cells = [];
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        const isOccupied = isCellOccupied(x, y);
+        
+        let isHovered = false;
+        let isInvalid = false;
+        
+        if (hoverPos && currentShipDef && !waitingForOthers) {
+          const rotated = rotateShape(currentShipDef.shape, isVertical);
+          for (const cell of rotated) {
+              if (hoverPos.x + cell.x === x && hoverPos.y + cell.y === y) {
+                  isHovered = true;
+                  if (!canPlaceShip(hoverPos.x, hoverPos.y, currentShipDef, isVertical)) {
+                      isInvalid = true;
+                  }
+              }
+          }
         }
-    } else {
-        if (y === hoverPos.y && x >= hoverPos.x && x < hoverPos.x + currentShipDef.length) {
-            isHovering = true;
-        }
+
+        cells.push(
+          <div
+            key={`${x}-${y}`}
+            onMouseEnter={() => setHoverPos({ x, y })}
+            onClick={() => handleCellClick(x, y)}
+            className={`w-8 h-8 md:w-10 md:h-10 border border-white/10 transition-colors
+              ${isOccupied ? '' : ''}
+              ${isHovered ? (isInvalid ? 'bg-neon-red/50 cursor-not-allowed' : 'bg-neon-blue/50 cursor-pointer') : 'hover:bg-white/5'}
+            `}
+          ></div>
+        );
+      }
     }
 
-    if (isHovering) {
-        return canPlaceShip(hoverPos.x, hoverPos.y, currentShipDef, isVertical) ? 'valid' : 'invalid';
-    }
-    return null;
+    return (
+      <div className="relative inline-grid grid-cols-10 gap-0 border-2 border-white/20 bg-navy-900/50 p-2 rounded-xl" onMouseLeave={() => setHoverPos(null)}>
+        {cells}
+        
+        {/* Render graphical ships on top */}
+        {placedShips.map((ship, idx) => {
+            const minX = Math.min(...ship.cells.map((c:any) => c.x));
+            const maxX = Math.max(...ship.cells.map((c:any) => c.x));
+            const minY = Math.min(...ship.cells.map((c:any) => c.y));
+            const maxY = Math.max(...ship.cells.map((c:any) => c.y));
+            const isVerticalPlaced = (maxY - minY) > (maxX - minX);
+
+            return (
+                <ShipGraphic key={idx} type={ship.type} isVertical={isVerticalPlaced} cells={ship.cells} />
+            );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -168,37 +206,7 @@ export default function DeploymentPage() {
           
         {/* Left: The Grid */}
         <div className="glass-panel p-6 rounded-xl flex-shrink-0">
-            <div className="grid grid-cols-10 gap-1 bg-navy-800 p-2 rounded border border-white/10"
-                 onMouseLeave={() => setHoverPos(null)}>
-            {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, i) => {
-                const x = i % GRID_SIZE;
-                const y = Math.floor(i / GRID_SIZE);
-                
-                const occupiedShip = placedShips.find(ship => ship.cells.some((c: any) => c.x === x && c.y === y));
-                const hoverState = getHoverState(x, y);
-
-                let cellClasses = 'w-8 h-8 md:w-12 md:h-12 border transition-colors duration-100 ';
-                
-                if (occupiedShip) {
-                    cellClasses += 'bg-white border-white/50 shadow-[0_0_15px_rgba(255,255,255,0.4)]';
-                } else if (hoverState === 'valid') {
-                    cellClasses += 'bg-neon-blue/50 border-neon-blue';
-                } else if (hoverState === 'invalid') {
-                    cellClasses += 'bg-neon-red/50 border-neon-red';
-                } else {
-                    cellClasses += 'bg-transparent border-white/10 hover:border-white/30';
-                }
-
-                return (
-                <div 
-                    key={i} 
-                    onMouseEnter={() => setHoverPos({ x, y })}
-                    onClick={() => handleCellClick(x, y)}
-                    className={cellClasses}
-                ></div>
-                );
-            })}
-            </div>
+            {renderGrid()}
         </div>
 
         {/* Right: Controls & Ships */}
@@ -221,10 +229,10 @@ export default function DeploymentPage() {
                                     >
                                         <div className="flex flex-col">
                                             <span className="font-bold tracking-wider uppercase">{ship.name}</span>
-                                            <span className="text-xs text-white/50">{ship.length} CELLS</span>
+                                            <span className="text-xs text-white/50">{ship.shape.length} CELLS</span>
                                         </div>
                                         <div className="flex gap-1">
-                                            {Array.from({length: ship.length}).map((_, i) => (
+                                            {Array.from({length: ship.shape.length}).map((_, i) => (
                                                 <div key={i} className={`w-4 h-4 rounded-sm ${isPlaced ? 'bg-white/50' : isSelected ? 'bg-neon-blue' : 'bg-white/80'}`}></div>
                                             ))}
                                         </div>
