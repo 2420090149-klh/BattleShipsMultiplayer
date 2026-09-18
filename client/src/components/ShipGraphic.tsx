@@ -5,9 +5,10 @@ interface ShipGraphicProps {
   isDestroyed?: boolean;
   hitIndices?: number[];
   size?: number;
+  className?: string;
 }
 
-export const ShipGraphic: React.FC<ShipGraphicProps> = ({ type, isVertical, cells, isDestroyed, hitIndices, size }) => {
+export const ShipGraphic: React.FC<ShipGraphicProps> = ({ type, isVertical, cells, isDestroyed, hitIndices, size, className = '' }) => {
   let content = null;
 
   switch(type) {
@@ -85,7 +86,7 @@ export const ShipGraphic: React.FC<ShipGraphicProps> = ({ type, isVertical, cell
   ) : null;
 
   return (
-    <div style={gridStyle} className={`relative min-w-0 min-h-0 w-full h-full pointer-events-none drop-shadow-2xl z-10 transition-all duration-700 ${isDestroyed ? 'brightness-50 sepia-[.3] hue-rotate-[-10deg] grayscale-[0.8]' : ''}`}>
+    <div style={gridStyle} className={`relative min-w-0 min-h-0 w-full h-full pointer-events-none drop-shadow-2xl z-10 transition-all duration-700 ${isDestroyed ? 'brightness-50 sepia-[.3] hue-rotate-[-10deg] grayscale-[0.8]' : ''} ${className}`}>
       <div className="absolute inset-0 w-full h-full p-1">
         {content}
         {hitsOverlay}

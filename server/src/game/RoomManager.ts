@@ -223,6 +223,7 @@ export class RoomManager {
             type: s.type,
             sunk: s.sunk,
             size: s.cells.length,
+            cells: (s.sunk || p.eliminated) ? s.cells : undefined,
             hitIndices: s.hits.map(h => s.cells.findIndex(c => c.x === h.x && c.y === h.y)).filter(i => i !== -1)
         })) : []
       }))

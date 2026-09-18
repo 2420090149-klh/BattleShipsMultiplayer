@@ -87,8 +87,9 @@ export default function GamePage() {
           );
         })}
         {/* Render Ships as Graphics */}
-        {player.fleet?.map((ship: any, idx: number) => {
+        {(isMe ? myFleet : player.publicFleet)?.map((ship: any, idx: number) => {
            if (!isMe && !ship.sunk && !player.eliminated) return null;
+           if (!isMe && !ship.cells) return null;
            
            const minX = Math.min(...ship.cells.map((c:any) => c.x));
            const maxX = Math.max(...ship.cells.map((c:any) => c.x));
@@ -97,9 +98,14 @@ export default function GamePage() {
            const isVerticalPlaced = (maxY - minY) > (maxX - minX);
            
            return (
-              <div key={`ship-${idx}`} className={`absolute inset-0 pointer-events-none transition-all duration-700 ease-in-out ${isMe && hideShips ? 'blur-md opacity-30 grayscale saturate-0' : ''}`}>
-                 <ShipGraphic type={ship.type} isVertical={isVerticalPlaced} cells={ship.cells} isDestroyed={ship.sunk} />
-              </div>
+              <ShipGraphic 
+                 key={`ship-${idx}`}
+                 type={ship.type} 
+                 isVertical={isVerticalPlaced} 
+                 cells={ship.cells} 
+                 isDestroyed={ship.sunk} 
+                 className={isMe && hideShips ? 'blur-md opacity-30 grayscale saturate-0' : ''}
+              />
            );
         })}
       </div>
