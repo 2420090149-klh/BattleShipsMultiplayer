@@ -77,6 +77,7 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-navy-900 text-white overflow-hidden font-sans">
+        <div className="scanlines"></div>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/room/:roomId" element={<LobbyPage />} />
