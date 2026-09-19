@@ -22,6 +22,7 @@ export interface Room {
   gameState: 'LOBBY' | 'DEPLOYMENT' | 'PLAYING' | 'FINISHED';
   currentTurnIndex: number;
   turnMisses: string[]; // targetIds that the current player has missed this turn
+  turnStartTime?: number;
   currentTargetId?: string | null;
   round: number;
   createdAt: number;

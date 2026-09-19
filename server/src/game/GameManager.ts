@@ -3,7 +3,38 @@ import { RoomManager } from './RoomManager';
 import { ShipPlacement, AttackResult, Player } from '../types';
 
 export class GameManager {
+  private turnTimers: Map<string, NodeJS.Timeout> = new Map();
+
   constructor(private io: Server, private roomManager: RoomManager) {}
+
+  private clearTurnTimer(roomId: string) {
+      if (this.turnTimers.has(roomId)) {
+          clearTimeout(this.turnTimers.get(roomId)!);
+          this.turnTimers.delete(roomId);
+      }
+  }
+
+  private startTurnTimer(room: any) {
+      this.clearTurnTimer(room.roomId);
+      
+      const timer = setTimeout(() => {
+          // Time's up! Kick the current player
+          const currentPlayer = room.players[room.currentTurnIndex];
+          if (currentPlayer && !currentPlayer.eliminated) {
+              const socketId = currentPlayer.socketId;
+              const socket = this.io.sockets.sockets.get(socketId);
+              if (socket) {
+                  // Simulate them leaving the match due to AFK
+                  socket.emit('game:error', { message: 'YOU WERE KICKED FOR INACTIVITY' });
+                  this.handleLeave({ id: socketId } as any); // mock socket just for id
+              } else {
+                  this.handleLeave({ id: socketId } as any);
+              }
+          }
+      }, 40000); // 40 seconds
+
+      this.turnTimers.set(room.roomId, timer);
+  }
 
   deployFleet(socket: Socket, data: { fleet: ShipPlacement[] }) {
     console.log(`[deployFleet] Received from ${socket.id}`);
@@ -32,8 +63,10 @@ export class GameManager {
       room.gameState = 'PLAYING';
       // reset ready state for next phase if needed
       room.players.forEach(p => p.ready = false);
+      room.turnStartTime = Date.now();
       
       console.log(`[deployFleet] All deployed! Starting battle in room ${room.roomId}`);
+      this.startTurnTimer(room);
       this.io.to(room.roomId).emit('game:startBattle', {
         gameState: room.gameState,
         currentTurnId: room.players[room.currentTurnIndex].id,
@@ -57,6 +90,62 @@ export class GameManager {
 
     room.currentTargetId = data.targetId;
     this.io.to(room.roomId).emit('room:update', this.roomManager.sanitizeRoom(room));
+  }
+
+  advanceTurn(room: any): number {
+      room.turnMisses = []; // Reset misses for the next player
+      let nextTurnIndex = room.currentTurnIndex;
+      for(let i=1; i <= room.players.length; i++) {
+          const checkIndex = (room.currentTurnIndex + i) % room.players.length;
+          if (!room.players[checkIndex].eliminated) {
+              nextTurnIndex = checkIndex;
+              if (checkIndex <= room.currentTurnIndex) {
+                  room.round += 1;
+              }
+              break;
+          }
+      }
+      room.currentTurnIndex = nextTurnIndex;
+      room.currentTargetId = null;
+      room.turnStartTime = Date.now();
+      this.startTurnTimer(room);
+      return nextTurnIndex;
+  }
+
+  handleLeave(socket: Socket) {
+      const room = this.roomManager.getRoomForSocket(socket.id);
+      if (!room || room.gameState !== 'PLAYING') return;
+      
+      const playerIndex = room.players.findIndex(p => p.socketId === socket.id);
+      if (playerIndex === -1) return;
+      const player = room.players[playerIndex];
+      
+      if (!player.eliminated) {
+          player.eliminated = true;
+          player.remainingShips = 0;
+          
+          let nextTurnId = room.players[room.currentTurnIndex].id;
+          // If it was their turn, advance
+          if (room.currentTurnIndex === playerIndex) {
+              const nextTurnIndex = this.advanceTurn(room);
+              nextTurnId = room.players[nextTurnIndex].id;
+          }
+          
+          this.io.to(room.roomId).emit('game:attackResult', {
+              x: -1, y: -1, result: 'miss', targetId: player.id, attackerId: player.id, sunkShip: undefined, eliminatedTarget: true, nextTurnId, room: this.roomManager.sanitizeRoom(room)
+          });
+          
+          // Check win condition
+          const alivePlayers = room.players.filter(p => !p.eliminated);
+          if (alivePlayers.length <= 1) {
+              this.clearTurnTimer(room.roomId);
+              room.gameState = 'FINISHED';
+              this.io.to(room.roomId).emit('game:over', {
+                  winner: alivePlayers[0]?.id || null,
+                  room: this.roomManager.sanitizeRoom(room)
+              });
+          }
+      }
   }
 
   handleAttack(socket: Socket, data: { targetId: string; x: number; y: number }) {
@@ -134,20 +223,7 @@ export class GameManager {
     let nextTurnIndex = room.currentTurnIndex;
     
     if (!canStillAttack) {
-        // Advance turn
-        room.turnMisses = []; // Reset misses for the next player
-        for(let i=1; i <= room.players.length; i++) {
-            const checkIndex = (room.currentTurnIndex + i) % room.players.length;
-            if (!room.players[checkIndex].eliminated) {
-                nextTurnIndex = checkIndex;
-                if (checkIndex < room.currentTurnIndex) {
-                    room.round += 1;
-                }
-                break;
-            }
-        }
-        room.currentTurnIndex = nextTurnIndex;
-        room.currentTargetId = null;
+        nextTurnIndex = this.advanceTurn(room);
     }
 
     const alivePlayers = room.players.filter(p => !p.eliminated);
@@ -167,6 +243,7 @@ export class GameManager {
     this.io.to(room.roomId).emit('game:attackResult', result);
 
     if (alivePlayers.length <= 1) {
+        this.clearTurnTimer(room.roomId);
         room.gameState = 'FINISHED';
         this.io.to(room.roomId).emit('game:over', {
             winner: alivePlayers[0]?.id || null,

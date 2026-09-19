@@ -162,6 +162,7 @@ export default function DeploymentPage() {
         cells.push(
           <div
             key={`${x}-${y}`}
+            style={{ gridColumn: x + 1, gridRow: y + 1 }}
             onMouseEnter={() => setHoverPos({ x, y })}
             onClick={() => handleCellClick(x, y)}
             className={`w-8 h-8 md:w-10 md:h-10 border border-white/10 transition-colors

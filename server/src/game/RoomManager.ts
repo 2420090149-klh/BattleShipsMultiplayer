@@ -119,8 +119,27 @@ export class RoomManager {
     }
   }
 
-  leaveRoom(socket: Socket) {
-    this.removePlayer(socket.id, socket);
+  leaveRoom(socket: Socket, io?: any) {
+    const room = this.getRoomForSocket(socket.id);
+    if (!room) return;
+
+    if (room.gameState === 'LOBBY' || room.gameState === 'DEPLOYMENT') {
+        this.removePlayer(socket.id, socket);
+        if (io) io.to(room.roomId).emit('room:update', this.sanitizeRoom(room));
+    } else {
+        const player = room.players.find(p => p.socketId === socket.id);
+        if (player && !player.eliminated) {
+            player.eliminated = true;
+            player.connected = false;
+            player.remainingShips = 0; // sink all ships visually
+
+            if (io) {
+                io.to(room.roomId).emit('room:update', this.sanitizeRoom(room));
+                // We should also tell GameManager to advance turn if it was their turn
+                // But since we can't easily do that here without coupling, let's emit an event for it or handle it in index.ts
+            }
+        }
+    }
   }
 
   setPlayerReady(socket: Socket, ready: boolean, io: any) {
@@ -208,6 +227,7 @@ export class RoomManager {
       gameState: room.gameState,
       currentTurnIndex: room.currentTurnIndex,
       turnMisses: room.turnMisses,
+      turnStartTime: (room as any).turnStartTime,
       players: room.players.map(p => ({
         id: p.id,
         nickname: p.nickname,

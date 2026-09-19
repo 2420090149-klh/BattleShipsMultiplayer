@@ -85,6 +85,12 @@ export default function LobbyPage() {
 
       <div className="absolute bottom-12 left-0 w-full flex justify-center gap-6">
         <button 
+           onClick={() => { socket.emit('room:leave'); navigate('/'); }}
+           className="px-8 py-3 rounded font-bold tracking-widest transition-colors bg-transparent border border-white/20 text-white/50 hover:text-white hover:border-white"
+        >
+           LEAVE
+        </button>
+        <button 
           onClick={toggleReady}
           className={`px-8 py-3 rounded font-bold tracking-widest transition-colors ${me?.ready ? 'bg-transparent border border-neon-blue text-neon-blue' : 'bg-neon-blue text-navy-900 hover:bg-white'}`}
         >

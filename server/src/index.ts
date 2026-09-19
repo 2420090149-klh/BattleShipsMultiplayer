@@ -41,7 +41,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('room:leave', () => {
-    roomManager.leaveRoom(socket);
+    gameManager.handleLeave(socket);
+    roomManager.leaveRoom(socket, io);
   });
 
   socket.on('room:ready', (data) => {
@@ -67,6 +68,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
+    gameManager.handleLeave(socket);
     roomManager.handleDisconnect(socket, io);
   });
 });

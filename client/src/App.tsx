@@ -38,6 +38,10 @@ function App() {
       alert(error.message);
     });
 
+    socket.on('game:error', (error) => {
+      alert(error.message);
+    });
+
     socket.on('game:startBattle', (data) => {
       setRoom(data.room);
       setCurrentTurnId(data.currentTurnId);

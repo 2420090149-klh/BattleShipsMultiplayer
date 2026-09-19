@@ -12,7 +12,28 @@ export default function GamePage() {
   const navigate = useNavigate();
   const { room, currentPlayerId, currentTurnId, myFleet, round } = useGameStore();
   const [hideShips, setHideShips] = useState(false);
-  
+  const [timeLeft, setTimeLeft] = useState(40);
+
+  const me = room?.players.find(p => p.id === currentPlayerId);
+  const opponents = room?.players.filter(p => p.id !== currentPlayerId) || [];
+  const isMyTurn = currentTurnId === currentPlayerId;
+  const isTargetingMe = room?.currentTargetId === currentPlayerId && !isMyTurn && !me?.eliminated;
+
+  useEffect(() => {
+      if (!isMyTurn || !(room as any)?.turnStartTime) {
+          setTimeLeft(40);
+          return;
+      }
+      
+      const interval = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - (room as any).turnStartTime) / 1000);
+          const remaining = Math.max(0, 40 - elapsed);
+          setTimeLeft(remaining);
+      }, 1000);
+      
+      return () => clearInterval(interval);
+  }, [isMyTurn, (room as any)?.turnStartTime]);
+
   useEffect(() => {
     if (room?.gameState === 'FINISHED') {
       navigate(`/results/${roomId}`);
@@ -20,11 +41,6 @@ export default function GamePage() {
   }, [room?.gameState, navigate, roomId]);
 
   if (!room) return null;
-
-  const me = room.players.find(p => p.id === currentPlayerId);
-  const opponents = room.players.filter(p => p.id !== currentPlayerId);
-  const isMyTurn = currentTurnId === currentPlayerId;
-  const isTargetingMe = room.currentTargetId === currentPlayerId && !isMyTurn && !me?.eliminated;
 
   const handleAttack = (targetId: string, x: number, y: number) => {
     if (!isMyTurn) return;
@@ -81,6 +97,7 @@ export default function GamePage() {
           return (
             <div 
               key={i} 
+              style={{ gridColumn: x + 1, gridRow: y + 1 }}
               onClick={() => !isMe && !incomingShot && canAttackThisOpponent && handleAttack(player.id, x, y)}
               className={`relative ${zIndex} w-6 h-6 md:w-8 md:h-8 border border-white/5 transition-all ${bgColor} ${!isMe && !incomingShot && canAttackThisOpponent ? 'hover:bg-white/30 cursor-crosshair' : ''}`}
             ></div>
@@ -127,18 +144,29 @@ export default function GamePage() {
           <div className="fixed inset-0 bg-red-600/30 z-[100] pointer-events-none animate-[pulse_0.75s_ease-in-out_infinite] mix-blend-color-burn shadow-[inset_0_0_300px_rgba(255,0,0,0.8)]" />
       )}
       <header className="flex justify-between items-center mb-8 shrink-0 relative z-20">
-        <div>
-          <h1 className={`text-2xl font-bold tracking-widest ${isMyTurn || isTargetingMe ? 'text-red-500' : 'text-neon-blue'}`}>ARMADA</h1>
-          <p className="text-white/50 text-sm tracking-widest">ROUND {round}</p>
+        <div className="flex gap-4 items-center">
+          <div>
+            <h1 className={`text-2xl font-bold tracking-widest ${isMyTurn || isTargetingMe ? 'text-red-500' : 'text-neon-blue'}`}>ARMADA</h1>
+            <p className="text-white/50 text-sm tracking-widest">ROUND {round}</p>
+          </div>
+          <button 
+             onClick={() => { socket.emit('room:leave'); navigate('/'); }}
+             className="ml-4 px-3 py-1 border border-red-500/50 text-red-400 text-xs font-bold rounded hover:bg-red-500 hover:text-white transition-colors"
+          >
+             LEAVE MATCH
+          </button>
         </div>
-        <div className={`px-6 py-2 rounded font-bold tracking-widest border flex items-center gap-2 ${
-            isMyTurn ? 'bg-red-600 text-white border-red-500 shadow-[0_0_20px_rgba(255,0,0,0.5)]' 
+        <div className={`px-6 py-2 rounded font-bold tracking-widest border flex items-center gap-4 ${
+            isMyTurn ? (timeLeft <= 10 ? 'bg-red-600 text-white border-red-500 shadow-[0_0_30px_rgba(255,0,0,0.8)] animate-pulse' : 'bg-red-950/80 text-white border-red-500 shadow-[0_0_20px_rgba(255,0,0,0.5)]') 
             : isTargetingMe ? 'bg-red-950/80 text-red-500 border-red-500 animate-[pulse_2s_ease-in-out_infinite]'
             : 'bg-navy-900 text-white/80 border-white/20'
         }`}>
+          {isMyTurn && (
+              <span className={`text-xl ${timeLeft <= 10 ? 'text-white' : 'text-red-400'}`}>00:{timeLeft.toString().padStart(2, '0')}</span>
+          )}
           {isMyTurn && <Crosshair size={20} />}
           {isTargetingMe && <ShieldAlert size={20} />}
-          {isMyTurn ? '🎯 YOUR TURN: SELECT TARGET' 
+          {isMyTurn ? (timeLeft <= 10 ? '⚠ WARNING: TURN EXPIRING' : '🎯 YOUR TURN: SELECT TARGET') 
             : isTargetingMe ? `⚠ YOU ARE UNDER ATTACK: ${targetingPlayer?.nickname.toUpperCase()} IS TARGETING YOU` 
             : `⏳ CURRENT TURN: ${targetingPlayer?.nickname.toUpperCase()}`}
         </div>
