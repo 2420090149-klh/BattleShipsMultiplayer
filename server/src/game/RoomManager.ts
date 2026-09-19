@@ -172,6 +172,29 @@ export class RoomManager {
     io.to(room.roomId).emit('room:update', this.sanitizeRoom(room));
   }
 
+  handleRematch(socket: Socket, io: any) {
+    const room = this.getRoomForSocket(socket.id);
+    if (!room || room.gameState !== 'FINISHED') return;
+
+    room.gameState = 'LOBBY';
+    room.round = 1;
+    room.currentTurnIndex = 0;
+    room.turnMisses = [];
+    room.currentTargetId = null;
+    delete (room as any).turnStartTime;
+
+    room.players.forEach(p => {
+        p.ready = false;
+        p.shots = [];
+        p.fleet = [];
+        p.remainingShips = 0;
+        p.eliminated = false;
+    });
+
+    io.to(room.roomId).emit('room:update', this.sanitizeRoom(room));
+    io.to(room.roomId).emit('game:rematch');
+  }
+
   handleDisconnect(socket: Socket, io: any) {
     const room = this.getRoomForSocket(socket.id);
     if (!room) return;

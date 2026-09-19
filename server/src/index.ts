@@ -53,6 +53,10 @@ io.on('connection', (socket) => {
     roomManager.startMatch(socket, io);
   });
 
+  socket.on('room:rematch', () => {
+    roomManager.handleRematch(socket, io);
+  });
+
   // Game Events
   socket.on('game:deploy', (data) => {
     gameManager.deployFleet(socket, data);

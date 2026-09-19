@@ -7,12 +7,10 @@ import { motion } from 'framer-motion';
 export default function LobbyPage() {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { room } = useGameStore();
+  const { room, currentPlayerId } = useGameStore();
 
   useEffect(() => {
     if (!room) {
-      // If we land here directly without being in a room, redirect to home
-      // In a real app we'd try to join via API/Socket using the roomId parameter
       navigate('/');
     }
   }, [room, navigate]);
@@ -25,8 +23,8 @@ export default function LobbyPage() {
 
   if (!room) return null;
 
-  const isHost = room.hostId === socket.id;
-  const me = room.players.find(p => p.id === socket.id);
+  const isHost = room.hostId === currentPlayerId;
+  const me = room.players.find(p => p.id === currentPlayerId);
 
   const toggleReady = () => {
     if (!me) return;

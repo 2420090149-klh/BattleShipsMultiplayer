@@ -1,10 +1,26 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../store/useGameStore';
 import { motion } from 'framer-motion';
 
 export default function ResultsPage() {
   const navigate = useNavigate();
-  const { room, winnerId, currentPlayerId } = useGameStore();
+  const { socket, room, winnerId, currentPlayerId } = useGameStore();
+
+  useEffect(() => {
+      if (!socket) return;
+      
+      const handleRematch = () => {
+          if (room?.roomId) {
+              navigate(`/lobby/${room.roomId}`);
+          }
+      };
+
+      socket.on('game:rematch', handleRematch);
+      return () => {
+          socket.off('game:rematch', handleRematch);
+      };
+  }, [socket, room?.roomId, navigate]);
 
   if (!room) return null;
 
@@ -52,10 +68,21 @@ export default function ResultsPage() {
 
         <div className="z-10 mt-12 flex gap-6">
             <button 
-                onClick={() => navigate('/')}
+                onClick={() => {
+                    socket.emit('room:rematch');
+                }}
+                className="bg-neon-blue/20 border border-neon-blue text-neon-blue px-8 py-3 rounded font-bold tracking-widest hover:bg-neon-blue hover:text-navy-950 transition-colors shadow-[0_0_15px_rgba(0,168,255,0.5)]"
+            >
+                REMATCH (RETURN TO LOBBY)
+            </button>
+            <button 
+                onClick={() => {
+                    socket.emit('room:leave');
+                    navigate('/');
+                }}
                 className="bg-transparent border border-white/20 text-white px-8 py-3 rounded font-bold tracking-widest hover:bg-white/10 transition-colors"
             >
-                RETURN TO HQ
+                LEAVE HQ
             </button>
         </div>
     </div>
