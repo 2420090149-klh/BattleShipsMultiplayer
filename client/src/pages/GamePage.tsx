@@ -24,7 +24,7 @@ export default function GamePage() {
   const me = room.players.find(p => p.id === currentPlayerId);
   const opponents = room.players.filter(p => p.id !== currentPlayerId);
   const isMyTurn = currentTurnId === currentPlayerId;
-  const isTargetingMe = room.currentTargetId === currentPlayerId && !isMyTurn;
+  const isTargetingMe = room.currentTargetId === currentPlayerId && !isMyTurn && !me?.eliminated;
 
   const handleAttack = (targetId: string, x: number, y: number) => {
     if (!isMyTurn) return;
@@ -122,6 +122,10 @@ export default function GamePage() {
 
   return (
     <div className={`min-h-screen p-4 md:p-8 flex flex-col h-screen transition-all duration-1000 ${themeClass}`}>
+      {/* Intense Red Flash Overlay when targeted */}
+      {isTargetingMe && (
+          <div className="fixed inset-0 bg-red-600/30 z-[100] pointer-events-none animate-[pulse_0.75s_ease-in-out_infinite] mix-blend-color-burn shadow-[inset_0_0_300px_rgba(255,0,0,0.8)]" />
+      )}
       <header className="flex justify-between items-center mb-8 shrink-0 relative z-20">
         <div>
           <h1 className={`text-2xl font-bold tracking-widest ${isMyTurn || isTargetingMe ? 'text-red-500' : 'text-neon-blue'}`}>ARMADA</h1>
@@ -179,9 +183,13 @@ export default function GamePage() {
                     onClick={() => canAttack && socket.emit('game:setTarget', { targetId: opp.id })}
                     className={`relative p-4 rounded-xl flex flex-col items-center transition-all duration-300 ease-in-out border-4 ${opp.eliminated ? 'opacity-50 grayscale bg-black/50 border-white/5' : isTargeted ? 'bg-red-950/80 shadow-[0_0_30px_rgba(255,0,0,0.3)] border-red-500 scale-105 z-10' : 'glass-panel opacity-80 hover:opacity-100 cursor-pointer border-white/10 hover:border-neon-blue/30'}`}
                  >
-                    {isTargeted && isMyTurn && (
-                        <div className="absolute -top-4 bg-red-600 text-white font-bold tracking-widest px-4 py-1 rounded shadow-lg text-sm flex items-center gap-2">
-                           <Crosshair size={16} /> ATTACKING: {opp.nickname}
+                    {isTargeted && (
+                        <div className={`absolute -top-4 font-bold tracking-widest px-4 py-1 rounded text-sm flex items-center gap-2 z-20 ${isMyTurn ? 'bg-red-600 text-white shadow-lg' : 'bg-red-950 text-red-500 border border-red-500 shadow-[0_0_20px_rgba(255,0,0,0.8)] animate-pulse'}`}>
+                           {isMyTurn ? (
+                              <><Crosshair size={16} /> ATTACKING: {opp.nickname}</>
+                           ) : (
+                              <><ShieldAlert size={16} /> TARGETED BY: {targetingPlayer?.nickname || 'UNKNOWN'}</>
+                           )}
                         </div>
                     )}
                     <div className="flex justify-between w-full mb-2">
