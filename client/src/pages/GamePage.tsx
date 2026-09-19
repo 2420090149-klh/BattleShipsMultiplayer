@@ -140,11 +140,26 @@ export default function GamePage() {
 
   const targetingPlayer = room.players.find(p => p.id === currentTurnId);
 
+  useEffect(() => {
+    socket.on('game:kicked', () => {
+      navigate('/');
+    });
+    return () => {
+      socket.off('game:kicked');
+    };
+  }, [navigate]);
+
   return (
     <div className={`min-h-screen p-4 md:p-8 flex flex-col h-screen transition-all duration-1000 ${themeClass}`}>
       {/* Intense Red Flash Overlay when targeted */}
       {isTargetingMe && (
           <div className="fixed inset-0 bg-red-600/30 z-[100] pointer-events-none animate-[pulse_0.75s_ease-in-out_infinite] mix-blend-color-burn shadow-[inset_0_0_300px_rgba(255,0,0,0.8)]" />
+      )}
+      {/* Flash warning when timer <= 10s */}
+      {isMyTurn && timeLeft <= 10 && (
+          <div className="fixed inset-0 bg-yellow-600/30 z-[100] pointer-events-none animate-[pulse_0.5s_ease-in-out_infinite] mix-blend-color-dodge shadow-[inset_0_0_200px_rgba(255,200,0,0.8)] flex items-center justify-center">
+              <h1 className="text-6xl font-black text-white/50 tracking-[1em] rotate-[-5deg]">WARNING</h1>
+          </div>
       )}
       <header className="flex justify-between items-center mb-8 shrink-0 relative z-20">
         <div className="flex gap-4 items-center">

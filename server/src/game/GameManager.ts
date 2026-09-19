@@ -26,6 +26,7 @@ export class GameManager {
               if (socket) {
                   // Simulate them leaving the match due to AFK
                   socket.emit('game:error', { message: 'YOU WERE KICKED FOR INACTIVITY' });
+                  socket.emit('game:kicked');
                   this.handleLeave({ id: socketId } as any); // mock socket just for id
               } else {
                   this.handleLeave({ id: socketId } as any);
