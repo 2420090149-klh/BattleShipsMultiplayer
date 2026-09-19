@@ -69,16 +69,16 @@ export const ShipGraphic: React.FC<ShipGraphicProps> = ({ type, isVertical, cell
 
   const hitsOverlay = size && hitIndices && hitIndices.length > 0 ? (
       <div 
-          className="absolute inset-0 grid z-20"
+          className="absolute inset-0 grid z-20 overflow-hidden rounded-full"
           style={{ 
               gridTemplateColumns: isVertical ? '1fr' : `repeat(${size}, 1fr)`, 
               gridTemplateRows: isVertical ? `repeat(${size}, 1fr)` : '1fr' 
           }}
       >
           {Array.from({ length: size }).map((_, i) => (
-             <div key={i} className="flex items-center justify-center relative">
+             <div key={i} className="flex items-center justify-center relative border-r border-white/10 last:border-r-0">
                  {hitIndices.includes(i) && (
-                     <div className="absolute w-3/4 h-3/4 bg-orange-500/80 rounded-full shadow-[0_0_10px_rgba(255,100,0,0.9)] animate-pulse mix-blend-screen" />
+                     <div className="absolute inset-0 w-full h-full bg-orange-600/80 shadow-[inset_0_0_15px_rgba(255,0,0,0.8)] animate-pulse mix-blend-screen" />
                  )}
              </div>
           ))}

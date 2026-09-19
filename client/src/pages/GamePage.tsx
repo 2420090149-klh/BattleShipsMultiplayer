@@ -52,12 +52,15 @@ export default function GamePage() {
       if (!fleet) return null;
       
       return (
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-4 w-full">
-              {fleet.map((ship: any, idx: number) => (
-                  <div key={idx} className={`w-12 h-6 md:w-16 md:h-8 relative ${ship.sunk ? 'opacity-30 grayscale' : ''}`}>
-                      <ShipGraphic type={ship.type} isVertical={false} isDestroyed={ship.sunk} size={ship.size} hitIndices={ship.hitIndices} />
-                  </div>
-              ))}
+          <div className="w-full mt-4">
+              <div className="text-[10px] text-white/40 tracking-widest text-center mb-1 font-bold">FLEET STATUS</div>
+              <div className="flex flex-wrap items-center justify-center gap-3 p-3 border-4 border-white/10 rounded-xl bg-black/20 shadow-[inset_0_0_15px_rgba(0,0,0,0.5)]">
+                  {fleet.map((ship: any, idx: number) => (
+                      <div key={idx} className={`w-12 h-5 md:w-16 md:h-6 relative transition-all duration-700 ${ship.sunk ? 'opacity-20 grayscale brightness-50' : 'drop-shadow-lg'}`}>
+                          <ShipGraphic type={ship.type} isVertical={false} isDestroyed={ship.sunk} size={ship.size} hitIndices={ship.hitIndices} />
+                      </div>
+                  ))}
+              </div>
           </div>
       );
   };
