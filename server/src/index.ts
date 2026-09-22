@@ -57,6 +57,19 @@ io.on('connection', (socket) => {
     roomManager.handleRematch(socket, io);
   });
 
+  socket.on('room:chat', (data) => {
+    const room = roomManager.getRoomForSocket(socket.id);
+    if (!room) return;
+    const player = room.players.find(p => p.socketId === socket.id);
+    if (!player) return;
+    io.to(room.roomId).emit('room:chat', {
+        sender: player.nickname,
+        senderId: player.id,
+        text: data.text,
+        timestamp: Date.now()
+    });
+  });
+
   // Game Events
   socket.on('game:deploy', (data) => {
     gameManager.deployFleet(socket, data);

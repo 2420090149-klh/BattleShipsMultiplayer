@@ -11,7 +11,7 @@ export default function GamePage() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { room, currentPlayerId, currentTurnId, myFleet, round } = useGameStore();
-  const [hideShips, setHideShips] = useState(false);
+  const [hideShips, setHideShips] = useState(true);
   const [timeLeft, setTimeLeft] = useState(40);
 
   const me = room?.players.find(p => p.id === currentPlayerId);

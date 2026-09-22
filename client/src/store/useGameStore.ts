@@ -28,6 +28,13 @@ export interface Room {
   round: number;
 }
 
+export interface ChatMessage {
+  sender: string;
+  senderId: string;
+  text: string;
+  timestamp: number;
+}
+
 interface GameStore {
   socket: any | null;
   setSocket: (socket: any) => void;
@@ -52,6 +59,9 @@ interface GameStore {
 
   winnerId: string | null;
   setWinnerId: (id: string | null) => void;
+
+  messages: ChatMessage[];
+  addMessage: (msg: ChatMessage) => void;
 
   resetStore: () => void;
 }
@@ -92,12 +102,16 @@ export const useGameStore = create<GameStore>((set) => {
   winnerId: null,
   setWinnerId: (id) => set({ winnerId: id }),
 
+  messages: [],
+  addMessage: (msg) => set((state) => ({ messages: [...state.messages, msg] })),
+
   resetStore: () => set({ 
     room: null, 
     myFleet: [], 
     currentTurnId: null, 
     round: 1, 
-    winnerId: null 
+    winnerId: null,
+    messages: []
   })
   };
 });

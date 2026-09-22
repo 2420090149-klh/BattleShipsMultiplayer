@@ -7,6 +7,7 @@ import LobbyPage from './pages/LobbyPage';
 import DeploymentPage from './pages/DeploymentPage';
 import GamePage from './pages/GamePage';
 import ResultsPage from './pages/ResultsPage';
+import ChatBox from './components/ChatBox';
 
 function App() {
   const { sessionId, setSocket, setRoom, setCurrentTurnId, setRound, setWinnerId, setCurrentPlayerId, setMyFleet } = useGameStore();
@@ -67,20 +68,28 @@ function App() {
       setWinnerId(data.winner);
     });
 
+    socket.on('room:chat', (msg) => {
+      useGameStore.getState().addMessage(msg);
+    });
+
     return () => {
       socket.disconnect();
       socket.off('room:joined');
       socket.off('room:update');
       socket.off('room:error');
+      socket.off('game:playerReady');
       socket.off('game:startBattle');
       socket.off('game:attackResult');
+      socket.off('game:playerDisconnected');
+      socket.off('game:error');
       socket.off('game:over');
+      socket.off('room:chat');
     };
-  }, [setSocket, setRoom, setCurrentTurnId, setRound, setWinnerId]);
+  }, [setRoom, setCurrentPlayerId, setCurrentTurnId, setRound, setWinnerId]);
 
   return (
     <Router>
-      <div className="min-h-screen bg-navy-900 text-white overflow-hidden font-sans">
+      <div className="min-h-screen bg-navy-900 text-white overflow-hidden font-sans relative">
         <div className="scanlines"></div>
         <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -89,6 +98,7 @@ function App() {
           <Route path="/game/:roomId" element={<GamePage />} />
           <Route path="/results/:roomId" element={<ResultsPage />} />
         </Routes>
+        <ChatBox />
       </div>
     </Router>
   );

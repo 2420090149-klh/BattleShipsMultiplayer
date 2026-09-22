@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { socket } from '../socket';
 import { useGameStore } from '../store/useGameStore';
 import { motion } from 'framer-motion';
-import { RotateCcw, Shuffle, Trash2 } from 'lucide-react';
+import { RotateCcw, Shuffle, Trash2, Shield } from 'lucide-react';
 
 import { ShipGraphic } from '../components/ShipGraphic';
 
@@ -175,7 +175,7 @@ export default function DeploymentPage() {
     }
 
     return (
-      <div className="relative inline-grid grid-cols-10 gap-0 border-2 border-white/20 bg-navy-900/50 p-2 rounded-xl" onMouseLeave={() => setHoverPos(null)}>
+      <div className="relative inline-grid grid-cols-10 gap-0 border-2 border-white/20 bg-navy-900/50 p-2 rounded-xl overflow-hidden" onMouseLeave={() => setHoverPos(null)}>
         {cells}
         
         {/* Render graphical ships on top */}
@@ -190,6 +190,17 @@ export default function DeploymentPage() {
                 <ShipGraphic key={idx} type={ship.type} isVertical={isVerticalPlaced} cells={ship.cells} />
             );
         })}
+
+        {/* Hide ships when waiting for others */}
+        {waitingForOthers && (
+            <div className="absolute inset-0 bg-navy-950/95 z-50 flex flex-col items-center justify-center backdrop-blur-md">
+                <Shield size={48} className="text-neon-blue mb-4 animate-pulse" />
+                <h3 className="text-xl font-bold tracking-widest text-white mb-2">RESTRICTED AREA</h3>
+                <p className="text-[10px] text-white/50 tracking-[0.2em] text-center max-w-[80%]">
+                    SHIPS HIDDEN TO PREVENT SCREEN-PEEKING WHILE WAITING
+                </p>
+            </div>
+        )}
       </div>
     );
   };
