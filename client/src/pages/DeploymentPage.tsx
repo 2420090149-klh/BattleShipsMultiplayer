@@ -177,9 +177,9 @@ export default function DeploymentPage() {
     return (
       <div className="relative inline-grid grid-cols-10 gap-0 border-2 border-white/20 bg-navy-900/50 p-2 rounded-xl overflow-hidden" onMouseLeave={() => setHoverPos(null)}>
         {cells}
-        
+
         {/* Render graphical ships on top */}
-        {placedShips.map((ship, idx) => {
+        {!waitingForOthers && placedShips.map((ship, idx) => {
             const minX = Math.min(...ship.cells.map((c:any) => c.x));
             const maxX = Math.max(...ship.cells.map((c:any) => c.x));
             const minY = Math.min(...ship.cells.map((c:any) => c.y));
@@ -193,11 +193,11 @@ export default function DeploymentPage() {
 
         {/* Hide ships when waiting for others */}
         {waitingForOthers && (
-            <div className="absolute inset-0 bg-navy-950/95 z-50 flex flex-col items-center justify-center backdrop-blur-md">
+            <div className="absolute inset-0 bg-navy-950 z-50 flex flex-col items-center justify-center">
                 <Shield size={48} className="text-neon-blue mb-4 animate-pulse" />
-                <h3 className="text-xl font-bold tracking-widest text-white mb-2">RESTRICTED AREA</h3>
-                <p className="text-[10px] text-white/50 tracking-[0.2em] text-center max-w-[80%]">
-                    SHIPS HIDDEN TO PREVENT SCREEN-PEEKING WHILE WAITING
+                <h3 className="text-xl font-bold tracking-widest text-white mb-2 text-center">WAITING FOR OTHER COMMANDERS...</h3>
+                <p className="text-[10px] text-white/50 tracking-[0.2em] text-center max-w-[80%] mt-2">
+                    YOUR FLEET IS SECURED AND HIDDEN
                 </p>
             </div>
         )}
