@@ -20,7 +20,7 @@ export default function GamePage() {
   const isTargetingMe = room?.currentTargetId === currentPlayerId && !isMyTurn && !me?.eliminated;
 
   useEffect(() => {
-      if (!isMyTurn || !(room as any)?.turnStartTime) {
+      if (!(room as any)?.turnStartTime) {
           setTimeLeft(40);
           return;
       }
@@ -32,7 +32,7 @@ export default function GamePage() {
       }, 1000);
       
       return () => clearInterval(interval);
-  }, [isMyTurn, (room as any)?.turnStartTime]);
+  }, [(room as any)?.turnStartTime]);
 
   useEffect(() => {
     if (room?.gameState === 'FINISHED') {
@@ -179,9 +179,9 @@ export default function GamePage() {
             : isTargetingMe ? 'bg-red-950/80 text-red-500 border-red-500 animate-[pulse_2s_ease-in-out_infinite]'
             : 'bg-navy-900 text-white/80 border-white/20'
         }`}>
-          {isMyTurn && (
-              <span className={`text-xl ${timeLeft <= 10 ? 'text-white' : 'text-red-400'}`}>00:{timeLeft.toString().padStart(2, '0')}</span>
-          )}
+          <span className={`text-xl ${timeLeft <= 10 ? (isMyTurn ? 'text-white' : 'text-red-500 animate-pulse') : 'text-white/70'}`}>
+            00:{timeLeft.toString().padStart(2, '0')}
+          </span>
           {isMyTurn && <Crosshair size={20} />}
           {isTargetingMe && <ShieldAlert size={20} />}
           {isMyTurn ? (timeLeft <= 10 ? '⚠ WARNING: TURN EXPIRING' : '🎯 YOUR TURN: SELECT TARGET') 
