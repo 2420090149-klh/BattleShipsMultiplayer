@@ -249,6 +249,7 @@ export class RoomManager {
       maxPlayers: room.maxPlayers,
       gameState: room.gameState,
       currentTurnIndex: room.currentTurnIndex,
+      currentTargetId: (room as any).currentTargetId,
       turnMisses: room.turnMisses,
       turnStartTime: (room as any).turnStartTime,
       players: room.players.map(p => ({

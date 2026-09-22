@@ -102,7 +102,7 @@ export default function GamePage() {
               key={i} 
               style={{ gridColumn: x + 1, gridRow: y + 1 }}
               onClick={() => !isMe && !incomingShot && canAttackThisOpponent && handleAttack(player.id, x, y)}
-              className={`relative ${zIndex} w-6 h-6 md:w-8 md:h-8 border border-white/5 transition-all ${bgColor} ${!isMe && !incomingShot && canAttackThisOpponent ? 'hover:bg-white/30 cursor-crosshair' : ''}`}
+              className={`relative ${zIndex} w-6 h-6 md:w-8 md:h-8 border border-white/5 transition-all ${bgColor} ${!isMe && !incomingShot && canAttackThisOpponent ? 'hover:bg-red-500/50 hover:border-red-400 cursor-crosshair' : ''}`}
             ></div>
           );
         })}
@@ -124,7 +124,7 @@ export default function GamePage() {
                  isVertical={isVerticalPlaced} 
                  cells={ship.cells} 
                  isDestroyed={ship.sunk} 
-                 className={isMe && hideShips ? 'blur-md opacity-30 grayscale saturate-0' : ''}
+                 className={isMe && hideShips ? 'hidden' : ''}
               />
            );
         })}
@@ -227,7 +227,7 @@ export default function GamePage() {
                     onMouseEnter={() => canAttack && socket.emit('game:setTarget', { targetId: opp.id })}
                     onMouseLeave={() => canAttack && socket.emit('game:setTarget', { targetId: null })}
                     onClick={() => canAttack && socket.emit('game:setTarget', { targetId: opp.id })}
-                    className={`relative p-4 rounded-xl flex flex-col items-center transition-all duration-300 ease-in-out border-4 ${opp.eliminated ? 'opacity-50 grayscale bg-black/50 border-white/5' : isTargeted ? 'bg-red-950/80 shadow-[0_0_30px_rgba(255,0,0,0.3)] border-red-500 scale-105 z-10' : 'glass-panel opacity-80 hover:opacity-100 cursor-pointer border-white/10 hover:border-neon-blue/30'}`}
+                    className={`relative p-4 rounded-xl flex flex-col items-center transition-all duration-300 ease-in-out border-4 ${opp.eliminated ? 'opacity-50 grayscale bg-black/50 border-white/5' : isTargeted ? 'bg-red-900/90 shadow-[0_0_50px_rgba(255,0,0,0.8)] border-red-500 scale-105 z-10 animate-[pulse_1s_ease-in-out_infinite]' : 'glass-panel opacity-80 hover:opacity-100 cursor-pointer border-white/10 hover:border-neon-blue/30'}`}
                  >
                     {isTargeted && (
                         <div className={`absolute -top-4 font-bold tracking-widest px-4 py-1 rounded text-sm flex items-center gap-2 z-20 ${isMyTurn ? 'bg-red-600 text-white shadow-lg' : 'bg-red-950 text-red-500 border border-red-500 shadow-[0_0_20px_rgba(255,0,0,0.8)] animate-pulse'}`}>
