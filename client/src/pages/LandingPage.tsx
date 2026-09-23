@@ -4,7 +4,7 @@ import { socket } from '../socket';
 import { useGameStore } from '../store/useGameStore';
 import { motion } from 'framer-motion';
 import { ShipGraphic } from '../components/ShipGraphic';
-import { Crosshair, ShieldAlert, RadioTower, Anchor, Terminal } from 'lucide-react';
+import { Crosshair, RadioTower } from 'lucide-react';
 
 export default function LandingPage() {
   const [nickname, setNickname] = useState('');
@@ -23,10 +23,9 @@ export default function LandingPage() {
     socket.emit('room:create', {
       nickname,
       avatar: 'default',
-      color: '#00f3ff', // Internal game color logic kept intact
+      color: '#00f3ff',
       maxPlayers: 6
     });
-    
     setTimeout(() => {
         const store = useGameStore.getState();
         if (store.room) {
@@ -42,7 +41,7 @@ export default function LandingPage() {
       roomId: joinCode,
       nickname,
       avatar: 'default',
-      color: '#ff0055' // Internal game color logic kept intact
+      color: '#ff0055'
     });
     setTimeout(() => {
         const store = useGameStore.getState();
@@ -52,197 +51,203 @@ export default function LandingPage() {
     }, 500);
   };
 
-  const containerVariants = {
+  // Entrance animations
+  const menuVariants = {
     hidden: { opacity: 0 },
     visible: { 
       opacity: 1,
-      transition: { 
-        duration: 0.8,
-        staggerChildren: 0.2
-      }
+      transition: { duration: 1.2, staggerChildren: 0.15, delayChildren: 0.5 }
     }
   };
 
   const itemVariants: any = {
-    hidden: { opacity: 0, y: reducedMotion ? 0 : 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+    hidden: { opacity: 0, y: reducedMotion ? 0 : 15 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
   };
 
   return (
-    <div className="min-h-screen bg-[#000a14] text-slate-300 flex flex-col justify-between overflow-hidden relative font-sans select-none">
+    <div className="min-h-screen bg-[#020508] text-slate-300 flex flex-col justify-center overflow-hidden relative font-sans select-none">
       
-      {/* ATMOSPHERIC BACKGROUND */}
-      <div className="absolute inset-0 pointer-events-none z-0">
-          {/* Subtle naval grid */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,100,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,100,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
-          {/* Vignette */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_10%,_#000a14_100%)] opacity-90"></div>
-          {/* Scanlines */}
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc0JyBoZWlnaHQ9JzQnPjxyZWN0IHdpZHRoPSc0JyBoZWlnaHQ9JzEnIGZpbGw9J3JnYmEoMjU1LDI1NSwyNTUsMC4wNSknLz48L3N2Zz4=')] opacity-30 mix-blend-overlay"></div>
+      {/* LAYER 1: Deep Ocean Background */}
+      <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_bottom,_#081b2e_0%,_#020508_100%)]"></div>
+
+      {/* LAYER 2: Subtle Tactical Grid */}
+      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(20,50,100,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(20,50,100,0.1)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
       </div>
 
-      <motion.div 
-        className="relative z-10 flex flex-col lg:flex-row flex-1 w-full max-w-7xl mx-auto px-6 py-12 gap-12"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        
-        {/* LEFT COLUMN: TITLE & RADAR */}
-        <div className="flex-1 flex flex-col justify-center">
-            <motion.div variants={itemVariants} className="mb-12">
-                <div className="flex items-center gap-3 mb-2 text-cyan-700">
-                    <Terminal size={16} />
-                    <span className="text-xs font-bold tracking-[0.3em]">SYSTEM ONLINE</span>
-                </div>
-                <h1 className="text-4xl md:text-6xl font-black tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-br from-slate-200 to-slate-600 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                    BATTLESHIPS
-                </h1>
-                <h2 className="text-sm md:text-base font-bold tracking-[0.4em] text-cyan-600 mt-2 ml-1">
-                    MULTIPLAYER NAVAL COMMAND
-                </h2>
-            </motion.div>
+      {/* LAYER 3: Distant Radar and Fog */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          {/* Subtle Radar far off in the top right corner */}
+          <div className="absolute -top-32 -right-32 w-[600px] h-[600px] border border-cyan-900/10 rounded-full opacity-30"></div>
+          <div className="absolute top-16 right-16 w-[200px] h-[200px] border border-cyan-900/20 rounded-full opacity-20">
+              {!reducedMotion && (
+                  <motion.div 
+                      className="absolute inset-0 rounded-full bg-[conic-gradient(from_0deg_at_center,_transparent_0deg,_rgba(0,150,255,0.05)_90deg)]"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                  />
+              )}
+          </div>
+          
+          {/* Drifting Fog */}
+          {!reducedMotion && (
+            <motion.div 
+              className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMDAnIGhlaWdodD0nMTAwJz48ZmlsdGVyIGlkPSdmJz48ZmVUdXJidWxlbmNlIHR5cGU9J2ZyYWN0YWxOb2lzZScgYmFzZUZyZXF1ZW5jeT0nMC4wMScgbnVtT2N0YXZlcz0nMycgc3RpdGNoVGlsZXM9J3N0aXRjaCcvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPScxMDAnIGhlaWdodD0nMTAwJyBmaWx0ZXI9J3VybCgjZiknIG9wYWNpdHk9JzAuMTUnLz48L3N2Zz4=')] opacity-20 mix-blend-overlay scale-150"
+              animate={{ x: [0, -100] }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            />
+          )}
+      </div>
 
-            {/* ATMOSPHERIC RADAR */}
-            <motion.div variants={itemVariants} className="relative hidden lg:flex items-center justify-center w-[400px] h-[400px] opacity-40">
-                <div className="absolute inset-0 border border-cyan-900/50 rounded-full"></div>
-                <div className="absolute inset-4 border border-cyan-900/30 rounded-full"></div>
-                <div className="absolute inset-16 border border-cyan-900/20 rounded-full border-dashed"></div>
-                
-                {/* Radar Sweep */}
-                {!reducedMotion && (
+      {/* LAYER 4: Ambient Ships Cruising (Decorative) */}
+      <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden opacity-40 grayscale-[50%]">
+          {!reducedMotion && (
+             <>
+                {/* Massive Carrier far back */}
+                <motion.div 
+                  className="absolute top-[20%] w-64 h-32"
+                  initial={{ x: '110vw' }}
+                  animate={{ x: '-20vw' }}
+                  transition={{ duration: 80, repeat: Infinity, ease: "linear" }}
+                >
+                    <div className="scale-75 origin-center blur-[2px] opacity-30"><ShipGraphic type="carrier" isVertical={false} /></div>
+                </motion.div>
+
+                {/* Battleship moving across middle distance */}
+                <motion.div 
+                  className="absolute top-[50%] w-48 h-24"
+                  initial={{ x: '-20vw' }}
+                  animate={{ x: '110vw' }}
+                  transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+                >
                     <motion.div 
-                        className="absolute top-0 right-1/2 bottom-1/2 left-0 origin-bottom-right bg-[conic-gradient(from_180deg_at_bottom_right,_transparent_0deg,_rgba(0,200,255,0.1)_90deg)]"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                    />
-                )}
-                
-                {/* Crosshairs */}
-                <div className="absolute top-0 bottom-0 left-1/2 w-px bg-cyan-900/30"></div>
-                <div className="absolute left-0 right-0 top-1/2 h-px bg-cyan-900/30"></div>
-
-                {/* Blips */}
-                <div className="absolute top-[30%] left-[60%] w-1.5 h-1.5 bg-cyan-500 rounded-full shadow-[0_0_8px_rgba(0,200,255,1)] animate-pulse"></div>
-                <div className="absolute top-[65%] left-[25%] w-1.5 h-1.5 bg-cyan-600 rounded-full"></div>
-            </motion.div>
-        </div>
-
-        {/* RIGHT COLUMN: COMMAND CONSOLE */}
-        <div className="flex-[0.8] flex flex-col justify-center">
-            <motion.div variants={itemVariants} className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 p-8 rounded-xl shadow-2xl relative overflow-hidden">
-                {/* Corner accents */}
-                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-700/50"></div>
-                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-700/50"></div>
-                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-700/50"></div>
-                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-700/50"></div>
-
-                {/* CALLSIGN INPUT */}
-                <div className="mb-10 group">
-                    <label className="flex items-center gap-2 text-xs font-bold mb-3 text-slate-400 uppercase tracking-[0.2em]">
-                        <Anchor size={14} className="group-focus-within:text-cyan-500 transition-colors" />
-                        Commander Callsign
-                        {!nickname && <span className="ml-auto text-[10px] text-red-500 animate-pulse">IDENTIFICATION REQUIRED</span>}
-                    </label>
-                    <input 
-                        type="text" 
-                        value={nickname}
-                        onChange={(e) => setNickname(e.target.value)}
-                        className="w-full bg-[#00050a]/80 border border-slate-700/80 p-4 rounded text-slate-200 font-mono uppercase tracking-widest focus:outline-none focus:border-cyan-600 focus:bg-[#000a14] transition-all shadow-inner placeholder:text-slate-700"
-                        placeholder="ENTER CALLSIGN"
-                        maxLength={12}
-                    />
-                </div>
-
-                {/* DEPLOY ACTION */}
-                <div className="mb-8">
-                    <button 
-                        onClick={handleCreate}
-                        disabled={!nickname}
-                        className="w-full bg-slate-800 hover:bg-cyan-900 border border-slate-600 hover:border-cyan-500 text-slate-300 hover:text-white font-bold py-4 rounded tracking-[0.2em] transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:pointer-events-none group"
+                       animate={{ y: [-2, 2, -2] }} 
+                       transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                       className="scale-100 opacity-60"
                     >
-                        <Crosshair size={18} className="group-hover:text-cyan-400" />
-                        DEPLOY NEW FLEET
-                    </button>
-                    <p className="text-center text-[10px] text-slate-500 mt-3 tracking-widest uppercase">Establish a new naval operation</p>
-                </div>
+                        <ShipGraphic type="battleship" isVertical={false} />
+                    </motion.div>
+                </motion.div>
 
-                {/* DIVIDER */}
-                <div className="flex items-center gap-4 py-4 opacity-40">
-                    <div className="h-px bg-gradient-to-r from-transparent to-slate-500 flex-1"></div>
-                    <span className="text-slate-400 text-[10px] tracking-[0.4em] font-bold">OR</span>
-                    <div className="h-px bg-gradient-to-l from-transparent to-slate-500 flex-1"></div>
-                </div>
+                {/* Submarine surfacing occasionally in foreground */}
+                <motion.div 
+                  className="absolute bottom-[20%] w-32 h-16"
+                  initial={{ x: '110vw' }}
+                  animate={{ x: '-20vw' }}
+                  transition={{ duration: 40, repeat: Infinity, ease: "linear", delay: 10 }}
+                >
+                    <motion.div 
+                       animate={{ opacity: [0.1, 0.4, 0.1], y: [10, 0, 10] }} 
+                       transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                       className="scale-125 mix-blend-overlay"
+                    >
+                        <ShipGraphic type="submarine" isVertical={false} />
+                    </motion.div>
+                </motion.div>
+             </>
+          )}
+      </div>
 
-                {/* JOIN ACTION */}
-                <div className="mt-4">
-                    <label className="flex items-center gap-2 text-xs font-bold mb-3 text-slate-400 uppercase tracking-[0.2em]">
-                        <RadioTower size={14} />
-                        Join Existing Operation
-                        <span className="ml-auto text-[10px] text-cyan-700">SECURE CHANNEL</span>
-                    </label>
-                    <div className="flex gap-3">
-                        <input 
-                            type="text" 
-                            value={joinCode}
-                            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                            className="flex-[2] bg-[#00050a]/80 border border-slate-700/80 p-4 rounded text-slate-200 font-mono uppercase tracking-widest text-center focus:outline-none focus:border-red-900 focus:bg-[#000a14] transition-all shadow-inner placeholder:text-slate-700"
-                            placeholder="ROOM CODE"
-                            maxLength={6}
-                        />
-                        <button 
-                            onClick={handleJoin}
-                            disabled={!nickname || joinCode.length < 6}
-                            className="flex-[1] bg-transparent border border-red-900/50 hover:bg-red-900/30 text-red-500 hover:text-red-400 hover:border-red-500 font-bold py-4 rounded tracking-[0.2em] transition-all disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center gap-2"
-                        >
-                            <ShieldAlert size={16} />
-                            JOIN
-                        </button>
-                    </div>
-                </div>
+      {/* LAYER 5: The Game Menu / HUD */}
+      <div className="relative z-20 w-full max-w-7xl mx-auto px-8 py-12 flex flex-col items-start justify-center h-full">
+          
+          <motion.div 
+            variants={menuVariants}
+            initial="hidden"
+            animate="visible"
+            className="w-full max-w-3xl"
+          >
+              {/* STATUS HUD */}
+              <motion.div variants={itemVariants} className="flex items-center gap-4 mb-6">
+                  <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(0,200,255,0.8)]"></div>
+                      <span className="text-[10px] font-bold text-cyan-500 tracking-[0.3em]">SYSTEM ONLINE</span>
+                  </div>
+                  <div className="h-3 w-px bg-slate-700"></div>
+                  <span className="text-[10px] font-mono text-slate-500 tracking-widest">SECTOR 07 • SECURE</span>
+              </motion.div>
 
-            </motion.div>
-        </div>
-      </motion.div>
+              {/* TITLE */}
+              <motion.div variants={itemVariants} className="mb-12">
+                  <h1 className="text-6xl md:text-8xl font-black tracking-widest text-slate-100 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]">
+                      BATTLESHIPS
+                  </h1>
+                  <h2 className="text-sm md:text-xl font-bold tracking-[0.5em] text-slate-400 mt-2 ml-1">
+                      MULTIPLAYER NAVAL WARFARE
+                  </h2>
+              </motion.div>
 
-      {/* BOTTOM FLEET PREVIEW */}
-      <motion.div 
-        className="relative z-10 w-full bg-[#00050a]/80 border-t border-slate-800/50 py-4"
-        variants={itemVariants}
-        initial="hidden"
-        animate="visible"
-      >
-          <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 opacity-60">
-              <span className="text-[10px] font-bold tracking-[0.3em] text-slate-500 uppercase hidden md:block">Fleet Composition</span>
-              
-              <div className="flex items-center gap-8 md:gap-16 grayscale opacity-70">
-                  {/* Small Graphical Representations of Ships */}
-                  <div className="flex flex-col items-center gap-2">
-                      <div className="w-16 h-8"><ShipGraphic type="carrier" isVertical={false} /></div>
-                      <span className="text-[8px] tracking-widest text-slate-500">CARRIER</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-2">
-                      <div className="w-12 h-6"><ShipGraphic type="battleship" isVertical={false} /></div>
-                      <span className="text-[8px] tracking-widest text-slate-500">BATTLESHIP</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-2">
-                      <div className="w-8 h-5"><ShipGraphic type="cruiser" isVertical={false} /></div>
-                      <span className="text-[8px] tracking-widest text-slate-500">CRUISER</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-2">
-                      <div className="w-8 h-4"><ShipGraphic type="destroyer" isVertical={false} /></div>
-                      <span className="text-[8px] tracking-widest text-slate-500">DESTROYER</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-2">
-                      <div className="w-6 h-3 opacity-80"><ShipGraphic type="submarine" isVertical={false} /></div>
-                      <span className="text-[8px] tracking-widest text-slate-500">SUBMARINE</span>
-                  </div>
+              {/* INTERACTIVE MENU */}
+              <div className="flex flex-col gap-10">
+                  
+                  {/* CALLSIGN */}
+                  <motion.div variants={itemVariants} className="group max-w-md">
+                      <label className="block text-[11px] font-bold mb-2 text-slate-400 uppercase tracking-[0.2em] group-focus-within:text-cyan-400 transition-colors">
+                          Commander Callsign
+                      </label>
+                      <input 
+                          type="text" 
+                          value={nickname}
+                          onChange={(e) => setNickname(e.target.value)}
+                          className="w-full bg-transparent border-b-2 border-slate-700 p-2 text-3xl font-bold uppercase tracking-widest text-slate-200 focus:outline-none focus:border-cyan-500 transition-colors placeholder:text-slate-800"
+                          placeholder="ENTER NAME"
+                          maxLength={12}
+                      />
+                  </motion.div>
+
+                  {/* ACTIONS */}
+                  <motion.div variants={itemVariants} className="flex flex-col md:flex-row gap-6 mt-4">
+                      
+                      {/* CREATE GAME */}
+                      <button 
+                          onClick={handleCreate}
+                          disabled={!nickname}
+                          className="relative flex-1 group bg-[#091a2a]/60 hover:bg-[#0c243b] border border-cyan-900/50 hover:border-cyan-400/80 p-6 transition-all duration-300 disabled:opacity-30 disabled:pointer-events-none text-left overflow-hidden"
+                      >
+                          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                          
+                          <div className="flex items-center gap-4 relative z-10">
+                              <div className="bg-cyan-900/30 p-3 rounded group-hover:bg-cyan-500/20 transition-colors">
+                                  <Crosshair size={24} className="text-cyan-500" />
+                              </div>
+                              <div>
+                                  <h3 className="text-xl font-bold text-slate-200 tracking-[0.15em] mb-1 group-hover:text-white">CREATE GAME</h3>
+                                  <p className="text-[10px] text-slate-400 tracking-widest uppercase">Start a new multiplayer battle</p>
+                              </div>
+                          </div>
+                      </button>
+
+                      {/* JOIN GAME */}
+                      <div className="flex-1 flex flex-col justify-center bg-[#050B12]/60 border border-slate-800/50 p-6">
+                          <div className="flex items-center gap-3 mb-4">
+                              <RadioTower size={16} className="text-slate-500" />
+                              <h3 className="text-sm font-bold text-slate-300 tracking-[0.15em]">JOIN GAME</h3>
+                          </div>
+                          <div className="flex gap-2 h-12">
+                              <input 
+                                  type="text" 
+                                  value={joinCode}
+                                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                                  className="w-full bg-[#03060a] border border-slate-800 p-2 text-center font-mono text-lg tracking-[0.3em] uppercase text-slate-300 focus:outline-none focus:border-slate-500 transition-colors placeholder:text-slate-800"
+                                  placeholder="CODE"
+                                  maxLength={6}
+                              />
+                              <button 
+                                  onClick={handleJoin}
+                                  disabled={!nickname || joinCode.length < 6}
+                                  className="px-6 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold tracking-widest transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                              >
+                                  JOIN
+                              </button>
+                          </div>
+                      </div>
+
+                  </motion.div>
               </div>
 
-              <span className="text-[10px] font-bold tracking-[0.3em] text-cyan-900 uppercase hidden md:block">Awaiting Orders</span>
-          </div>
-      </motion.div>
-
+          </motion.div>
+      </div>
     </div>
   );
 }
