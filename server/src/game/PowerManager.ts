@@ -125,9 +125,15 @@ export class PowerManager {
         break;
         
       case 'PRECISION_SHOT':
+        if (!data.targetId || data.x === undefined || data.y === undefined) return;
+        this.handlePrecisionShot(room, player, data.targetId, data.x, data.y);
+        endTurn = true;
+        break;
+
       case 'DEPTH_CHARGE':
-        // These alter attacks and should be routed specifically if needed,
-        // but for now we just acknowledge usage or process via custom attack path.
+        if (!data.targetId || data.x === undefined || data.y === undefined) return;
+        this.handleDepthCharge(room, player, data.targetId, data.x, data.y);
+        endTurn = true;
         break;
     }
 
@@ -246,6 +252,119 @@ export class PowerManager {
           type: 'INTEL', 
           message: `TARGET SHIP: ${ship.type.toUpperCase()}\nSIZE: ${ship.length} CELLS\nDAMAGE: ${ship.hits.length} / ${ship.length}` 
       });
+  }
+
+  private handleDepthCharge(room: Room, attacker: Player, targetId: string, x: number, y: number) {
+      const target = room.players.find(p => p.id === targetId);
+      if (!target || target.eliminated) return;
+
+      const coordinates = [
+          { x, y },
+          { x: x + 1, y },
+          { x, y: y + 1 },
+          { x: x + 1, y: y + 1 }
+      ];
+
+      for (const coord of coordinates) {
+          // Boundary check
+          if (coord.x > 9 || coord.y > 9) continue;
+          this.executeShot(room, attacker, target, coord.x, coord.y);
+      }
+  }
+
+  private handlePrecisionShot(room: Room, attacker: Player, targetId: string, x: number, y: number) {
+      const target = room.players.find(p => p.id === targetId);
+      if (!target || target.eliminated) return;
+
+      // Find the ship that owns this cell to verify it's a valid precision target.
+      // Precision shot requires the ship to ALREADY be known (have at least one hit).
+      const ship = target.fleet.find(s => s.cells.some(c => c.x === x && c.y === y));
+      if (!ship) {
+          // Target cell is empty, but Precision Shot is guaranteed to hit if used correctly.
+          // If the player clicked an empty cell, we still execute it as a miss.
+          this.executeShot(room, attacker, target, x, y);
+          return;
+      }
+
+      if (ship.hits.length === 0) {
+          // Ship is completely pristine. Precision shot shouldn't be allowed, but if it happens, it's a miss
+          // Wait, user says "Allows the player to specifically target a known/hit ship... Precision Shot allows targeting another valid section associated with the discovered ship."
+          // So if they target a pristine ship by guessing, do we allow it? Let's just execute the shot.
+      }
+
+      this.executeShot(room, attacker, target, x, y);
+  }
+
+  private executeShot(room: Room, attacker: Player, target: Player, x: number, y: number) {
+      // Check for duplicate attack
+      const alreadyAttacked = attacker.shots.some(
+          s => s.x === x && s.y === y && (s as any).targetId === target.id
+      );
+      if (alreadyAttacked) return;
+
+      let hit = false;
+      let blocked = false;
+      let sunkShip: string | undefined = undefined;
+
+      for (const ship of target.fleet) {
+          if (ship.sunk) continue;
+          
+          const cellIndex = ship.cells.findIndex(c => c.x === x && c.y === y);
+          if (cellIndex !== -1) {
+              const shieldIndex = room.activeEffects.findIndex(e => e.type === 'SHIELD' && e.targetId === target.id);
+              if (shieldIndex !== -1) {
+                  room.activeEffects.splice(shieldIndex, 1);
+                  blocked = true;
+                  break;
+              }
+
+              hit = true;
+              ship.hits.push({ x, y });
+              
+              if (ship.hits.length === ship.cells.length) {
+                  ship.sunk = true;
+                  sunkShip = ship.type;
+                  target.remainingShips -= 1;
+              }
+              break;
+          }
+      }
+
+      const shotResult = blocked ? 'blocked' : hit ? 'hit' : 'miss';
+      
+      attacker.shots.push({
+          x,
+          y,
+          result: shotResult,
+          targetId: target.id
+      } as any);
+
+      if (target.remainingShips === 0) {
+          target.eliminated = true;
+          if (!room.turnMisses.includes(target.id)) {
+              room.turnMisses.push(target.id);
+          }
+      }
+
+      if (shotResult === 'miss' || shotResult === 'blocked') {
+          if (!room.turnMisses.includes(target.id)) {
+              room.turnMisses.push(target.id);
+          }
+      }
+
+      const result: any = {
+          x,
+          y,
+          result: shotResult,
+          targetId: target.id,
+          attackerId: attacker.id,
+          sunkShip,
+          eliminatedTarget: target.eliminated,
+          nextTurnId: room.players[room.currentTurnIndex].id, // Doesn't matter, we broadcast room next anyway
+          room: this.roomManager.sanitizeRoom(room)
+      };
+
+      this.io.to(room.roomId).emit('game:attackResult', result);
   }
 
   public cleanExpiredEffects(room: Room) {

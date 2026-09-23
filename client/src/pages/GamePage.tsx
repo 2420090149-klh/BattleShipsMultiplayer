@@ -3,16 +3,18 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { socket } from '../socket';
 import { useGameStore } from '../store/useGameStore';
 import { ShipGraphic } from '../components/ShipGraphic';
-import { Shield, ShieldAlert, Crosshair } from 'lucide-react';
+import { Shield, ShieldAlert, Crosshair, Radar, Zap, Target, Eye, Move, Ghost, Cpu, Bomb } from 'lucide-react';
 
 const GRID_SIZE = 10;
 
 export default function GamePage() {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { room, currentPlayerId, currentTurnId, myFleet, round } = useGameStore();
+  const { room, currentPlayerId, currentTurnId, myFleet, round, activePower, setActivePower } = useGameStore();
   const [hideShips, setHideShips] = useState(true);
   const [timeLeft, setTimeLeft] = useState(40);
+  const [revealedPower, setRevealedPower] = useState<{ power: string, x: number, y: number } | null>(null);
+  const [powerResult, setPowerResult] = useState<{ type: string, message: string, revealed?: any[] } | null>(null);
 
   const me = room?.players.find(p => p.id === currentPlayerId);
   const opponents = room?.players.filter(p => p.id !== currentPlayerId) || [];
@@ -40,6 +42,25 @@ export default function GamePage() {
     }
   }, [room?.gameState, navigate, roomId]);
 
+  useEffect(() => {
+      const handlePowerCollected = (data: any) => {
+          setRevealedPower(data);
+          setTimeout(() => setRevealedPower(null), 3000);
+      };
+      const handlePowerResult = (data: any) => {
+          setPowerResult(data);
+          setTimeout(() => setPowerResult(null), 5000);
+      };
+      
+      socket.on('game:powerCollected', handlePowerCollected);
+      socket.on('game:powerResult', handlePowerResult);
+      
+      return () => {
+          socket.off('game:powerCollected', handlePowerCollected);
+          socket.off('game:powerResult', handlePowerResult);
+      };
+  }, []);
+
   if (!room) return null;
 
   const handleAttack = (targetId: string, x: number, y: number) => {
@@ -60,6 +81,63 @@ export default function GamePage() {
                           <ShipGraphic type={ship.type} isVertical={false} isDestroyed={ship.sunk} size={ship.size} hitIndices={ship.hitIndices} />
                       </div>
                   ))}
+              </div>
+          </div>
+      );
+  };
+
+  const POWER_DICT: Record<string, { name: string, icon: any, desc: string }> = {
+      'SONAR': { name: 'SONAR SCAN', icon: Radar, desc: 'Detect if a ship occupies a single cell.' },
+      'DOUBLE_STRIKE': { name: 'DOUBLE STRIKE', icon: Zap, desc: 'Launch two attacks this turn.' },
+      'RADAR': { name: 'RADAR SWEEP', icon: Eye, desc: 'Reveal a 3x3 area temporarily.' },
+      'SHIELD': { name: 'SHIELD', icon: Shield, desc: 'Block the next incoming hit.' },
+      'DEPTH_CHARGE': { name: 'DEPTH CHARGE', icon: Bomb, desc: 'Attack a 2x2 area.' },
+      'PRECISION_SHOT': { name: 'PRECISION SHOT', icon: Target, desc: 'Guaranteed hit on a discovered ship.' },
+      'GHOST_FLEET': { name: 'GHOST FLEET', icon: Ghost, desc: 'Block information-revealing powers for 1 round.' },
+      'RELOCATION': { name: 'RELOCATION', icon: Move, desc: 'Move a surviving ship to a new location.' },
+      'INTEL': { name: 'INTEL INTERCEPT', icon: Cpu, desc: 'Reveal the class and damage of a hit ship.' },
+      'EMP': { name: 'EMP STRIKE', icon: Zap, desc: 'Disable a target player\'s powers for 1 round.' },
+  };
+
+  const renderInventory = () => {
+      if (!me?.inventory || me.inventory.length === 0) return null;
+      
+      const hasEMP = room?.activeEffects?.some(e => e.type === 'EMP' && e.targetId === currentPlayerId);
+      
+      return (
+          <div className="w-full mt-4">
+              <div className="text-[10px] text-white/40 tracking-widest text-center mb-1 font-bold">YOUR POWERS</div>
+              <div className="flex flex-wrap items-center justify-center gap-2 p-3 border-4 border-neon-blue/20 rounded-xl bg-black/40">
+                  {hasEMP && (
+                      <div className="w-full text-center text-xs text-red-500 animate-pulse font-bold tracking-widest mb-2">POWERS DISABLED BY EMP</div>
+                  )}
+                  {me.inventory.map((powerType: string, idx: number) => {
+                      const pData = POWER_DICT[powerType];
+                      const Icon = pData.icon;
+                      const isActive = activePower === powerType;
+                      
+                      return (
+                          <button
+                              key={idx}
+                              disabled={hasEMP || (!isMyTurn && powerType !== 'SHIELD' && powerType !== 'GHOST_FLEET')}
+                              onClick={() => {
+                                  if (activePower === powerType) setActivePower(null);
+                                  else setActivePower(powerType as any);
+                                  
+                                  // Some powers are instant and don't need targeting mode
+                                  if (['DOUBLE_STRIKE', 'SHIELD', 'GHOST_FLEET'].includes(powerType)) {
+                                      socket.emit('game:usePower', { type: powerType });
+                                      setActivePower(null);
+                                  }
+                              }}
+                              title={pData.desc}
+                              className={`relative p-2 rounded border-2 transition-all group ${hasEMP ? 'opacity-30 grayscale cursor-not-allowed' : isActive ? 'bg-teal-500/30 border-teal-400 shadow-[0_0_15px_rgba(0,255,200,0.5)]' : 'bg-navy-800 border-white/20 hover:border-teal-500 hover:bg-navy-700'}`}
+                          >
+                              <Icon size={20} className={isActive ? 'text-teal-300' : 'text-white/70'} />
+                              {isActive && <div className="absolute -top-1 -right-1 w-3 h-3 bg-teal-400 rounded-full animate-ping" />}
+                          </button>
+                      );
+                  })}
               </div>
           </div>
       );
@@ -89,21 +167,53 @@ export default function GamePage() {
             cellState = (incomingShot as any).result;
           }
 
+          const powerCell = player.powerCells?.find((pc: any) => pc.x === x && pc.y === y && !pc.collected);
+
           let bgColor = 'bg-transparent';
           let zIndex = 'z-0';
           if (cellState === 'hit') { bgColor = 'bg-orange-500/80 shadow-[0_0_15px_rgba(255,100,0,0.8)] animate-pulse border-orange-300'; zIndex = 'z-20'; }
+          else if (cellState === 'blocked') { bgColor = 'bg-teal-500/80 shadow-[0_0_15px_rgba(0,255,200,0.8)] border-teal-300'; zIndex = 'z-20'; }
           else if (cellState === 'miss') { bgColor = 'bg-white/40 border-white/80'; zIndex = 'z-20'; }
           else if (hasShip && !hideShips) { bgColor = 'bg-neon-blue/10'; zIndex = 'z-0'; }
 
           const canAttackThisOpponent = isMyTurn && !(room as any).turnMisses?.includes(player.id);
+          const isTargeting = activePower !== null;
+          
+          let isRadarRevealed = false;
+          if (powerResult?.type === 'RADAR' && powerResult.revealed) {
+              // powerResult reveals specific coordinates
+              isRadarRevealed = powerResult.revealed.some((c:any) => c.x === x && c.y === y);
+          }
 
           return (
             <div 
               key={i} 
               style={{ gridColumn: x + 1, gridRow: y + 1 }}
-              onClick={() => !isMe && !incomingShot && canAttackThisOpponent && handleAttack(player.id, x, y)}
-              className={`relative ${zIndex} w-6 h-6 md:w-8 md:h-8 border border-white/5 transition-all ${bgColor} ${!isMe && !incomingShot && canAttackThisOpponent ? 'hover:bg-red-500/50 hover:border-red-400 cursor-crosshair' : ''}`}
-            ></div>
+              onClick={() => {
+                if (isMe && powerCell) {
+                    socket.emit('game:collectPower', { x, y });
+                } else if (!isMe && !incomingShot && canAttackThisOpponent && !isTargeting) {
+                    handleAttack(player.id, x, y);
+                } else if (!isMe && isTargeting) {
+                    if (['SONAR', 'RADAR', 'DEPTH_CHARGE', 'PRECISION_SHOT', 'INTEL', 'EMP'].includes(activePower!)) {
+                        socket.emit('game:usePower', { type: activePower, targetId: player.id, x, y });
+                        setActivePower(null);
+                    }
+                }
+              }}
+              className={`relative ${zIndex} w-6 h-6 md:w-8 md:h-8 border border-white/5 transition-all ${bgColor} 
+                ${!isMe && !incomingShot && canAttackThisOpponent && !isTargeting ? 'hover:bg-red-500/50 hover:border-red-400 cursor-crosshair' : ''}
+                ${isMe && powerCell ? 'cursor-pointer hover:bg-teal-500/30' : ''}`}
+            >
+              {isRadarRevealed && !isMe && !cellState && (
+                  <div className="absolute inset-0 bg-blue-500/50 border border-blue-400 shadow-[0_0_10px_rgba(0,100,255,0.8)] z-30 flex items-center justify-center">
+                     <Radar size={12} className="text-white animate-spin" />
+                  </div>
+              )}
+              {isMe && powerCell && (
+                  <div className="absolute inset-0 m-auto w-2 h-2 rounded-full bg-teal-400/50 shadow-[0_0_8px_rgba(0,255,255,0.8)] animate-[ping_2s_ease-in-out_infinite] mix-blend-screen" />
+              )}
+            </div>
           );
         })}
         {/* Render Ships as Graphics */}
@@ -161,6 +271,27 @@ export default function GamePage() {
               <h1 className="text-6xl font-black text-white/50 tracking-[1em] rotate-[-5deg]">WARNING</h1>
           </div>
       )}
+      {/* Power Collected Popup */}
+      {revealedPower && (
+          <div className="fixed inset-0 z-[200] pointer-events-none flex items-center justify-center bg-black/60 backdrop-blur-sm animate-[fadeIn_0.3s_ease-out]">
+             <div className="flex flex-col items-center bg-navy-900 border-4 border-teal-500 shadow-[0_0_50px_rgba(0,255,200,0.5)] p-8 rounded-2xl transform animate-[bounceIn_0.5s_ease-out]">
+                <div className="text-teal-400 mb-4 animate-pulse scale-150">
+                    {(() => { const Icon = POWER_DICT[revealedPower.power]?.icon || Zap; return <Icon size={64} />; })()}
+                </div>
+                <h2 className="text-3xl font-black tracking-widest text-white mb-2">{POWER_DICT[revealedPower.power]?.name || revealedPower.power}</h2>
+                <p className="text-teal-300 tracking-widest text-sm text-center max-w-xs">{POWER_DICT[revealedPower.power]?.desc}</p>
+             </div>
+          </div>
+      )}
+      {/* Power Result Popup */}
+      {powerResult && (
+          <div className="fixed bottom-10 right-10 z-[150] pointer-events-none bg-navy-900/90 border-l-4 border-teal-500 shadow-[0_0_30px_rgba(0,255,200,0.3)] p-6 rounded-r-xl transform animate-[slideInRight_0.3s_ease-out]">
+              <div className="text-xs text-teal-400 font-bold tracking-widest mb-1 flex items-center gap-2">
+                 <Zap size={14} /> TACTICAL INTEL
+              </div>
+              <div className="text-white font-mono whitespace-pre-wrap">{powerResult.message}</div>
+          </div>
+      )}
       <header className="flex justify-between items-center mb-8 shrink-0 relative z-20">
         <div className="flex gap-4 items-center">
           <div>
@@ -209,6 +340,7 @@ export default function GamePage() {
                 <div className="mt-4 text-neon-red font-bold tracking-widest text-xl text-center py-4">FLEET DESTROYED</div>
              )}
              {me && renderMiniFleet(me)}
+             {renderInventory()}
            </div>
         </div>
 
