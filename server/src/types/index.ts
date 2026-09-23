@@ -1,3 +1,31 @@
+export type PowerType = 
+  | 'SONAR' 
+  | 'DOUBLE_STRIKE' 
+  | 'RADAR' 
+  | 'SHIELD' 
+  | 'DEPTH_CHARGE' 
+  | 'PRECISION_SHOT' 
+  | 'GHOST_FLEET' 
+  | 'RELOCATION' 
+  | 'INTEL' 
+  | 'EMP';
+
+export interface PowerCell {
+  x: number;
+  y: number;
+  power: PowerType;
+  collected: boolean;
+}
+
+export interface ActiveEffect {
+  id: string; // Unique ID for the effect
+  type: PowerType;
+  targetId: string;
+  sourceId: string;
+  expiresAtRound: number;
+  expiresAtTurnIndex: number;
+}
+
 export interface Player {
   id: string;
   sessionId: string;
@@ -12,6 +40,9 @@ export interface Player {
   remainingShips: number;
   eliminated: boolean;
   isHost: boolean;
+  powerCells: PowerCell[];
+  inventory: PowerType[];
+  bonusAttacks: number;
 }
 
 export interface Room {
@@ -26,6 +57,7 @@ export interface Room {
   currentTargetId?: string | null;
   round: number;
   createdAt: number;
+  activeEffects: ActiveEffect[];
 }
 
 export interface ShipPlacement {
@@ -46,12 +78,13 @@ export interface Shot {
   x: number;
   y: number;
   result: 'hit' | 'miss';
+  targetId?: string;
 }
 
 export interface AttackResult {
   x: number;
   y: number;
-  result: 'hit' | 'miss';
+  result: 'hit' | 'miss' | 'blocked';
   targetId: string;
   attackerId: string;
   sunkShip?: string;

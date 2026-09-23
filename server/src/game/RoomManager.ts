@@ -22,7 +22,10 @@ export class RoomManager {
       shots: [],
       remainingShips: 0,
       eliminated: false,
-      isHost: true
+      isHost: true,
+      powerCells: [],
+      inventory: [],
+      bonusAttacks: 0
     };
 
     const room: Room = {
@@ -34,7 +37,8 @@ export class RoomManager {
       currentTurnIndex: 0,
       turnMisses: [],
       round: 1,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      activeEffects: []
     };
 
     this.rooms.set(roomId, room);
@@ -74,7 +78,10 @@ export class RoomManager {
       shots: [],
       remainingShips: 0,
       eliminated: false,
-      isHost: false
+      isHost: false,
+      powerCells: [],
+      inventory: [],
+      bonusAttacks: 0
     };
 
     room.players.push(player);
@@ -183,12 +190,17 @@ export class RoomManager {
     room.currentTargetId = null;
     delete (room as any).turnStartTime;
 
+    room.activeEffects = [];
+
     room.players.forEach(p => {
         p.ready = false;
         p.shots = [];
         p.fleet = [];
         p.remainingShips = 0;
         p.eliminated = false;
+        p.powerCells = [];
+        p.inventory = [];
+        p.bonusAttacks = 0;
     });
 
     io.to(room.roomId).emit('room:update', this.sanitizeRoom(room));
@@ -252,6 +264,7 @@ export class RoomManager {
       currentTargetId: (room as any).currentTargetId,
       turnMisses: room.turnMisses,
       turnStartTime: (room as any).turnStartTime,
+      activeEffects: room.activeEffects || [],
       players: room.players.map(p => ({
         id: p.id,
         nickname: p.nickname,
@@ -263,6 +276,14 @@ export class RoomManager {
         remainingShips: p.remainingShips,
         eliminated: p.eliminated,
         isHost: p.isHost,
+        bonusAttacks: p.bonusAttacks || 0,
+        inventory: p.inventory || [],
+        powerCells: p.powerCells ? p.powerCells.map(pc => ({
+           x: pc.x,
+           y: pc.y,
+           collected: pc.collected,
+           power: pc.collected ? pc.power : undefined
+        })) : [],
         publicFleet: p.fleet ? p.fleet.map(s => ({
             type: s.type,
             sunk: s.sunk,

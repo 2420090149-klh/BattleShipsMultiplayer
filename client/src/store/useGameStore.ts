@@ -1,6 +1,33 @@
 import { create } from 'zustand';
 
-// Assuming we duplicate some types here for the client
+export type PowerType = 
+  | 'SONAR' 
+  | 'DOUBLE_STRIKE' 
+  | 'RADAR' 
+  | 'SHIELD' 
+  | 'DEPTH_CHARGE' 
+  | 'PRECISION_SHOT' 
+  | 'GHOST_FLEET' 
+  | 'RELOCATION' 
+  | 'INTEL' 
+  | 'EMP';
+
+export interface PowerCell {
+  x: number;
+  y: number;
+  power?: PowerType; // Undefined for uncollected cells to hide type from client
+  collected: boolean;
+}
+
+export interface ActiveEffect {
+  id: string; // Unique ID for the effect
+  type: PowerType;
+  targetId: string;
+  sourceId: string;
+  expiresAtRound: number;
+  expiresAtTurnIndex: number;
+}
+
 export interface Player {
   id: string;
   nickname: string;
@@ -14,6 +41,9 @@ export interface Player {
   isHost: boolean;
   publicFleet?: { type: string, sunk: boolean, size: number, hitIndices: number[] }[];
   fleet?: any[]; // Only populated for the current user during game
+  powerCells?: PowerCell[];
+  inventory?: PowerType[];
+  bonusAttacks?: number;
 }
 
 export interface Room {
@@ -26,6 +56,7 @@ export interface Room {
   turnMisses: string[];
   currentTargetId?: string | null;
   round: number;
+  activeEffects?: ActiveEffect[];
 }
 
 export interface ChatMessage {
@@ -62,6 +93,9 @@ interface GameStore {
 
   messages: ChatMessage[];
   addMessage: (msg: ChatMessage) => void;
+
+  activePower: PowerType | null;
+  setActivePower: (power: PowerType | null) => void;
 
   resetStore: () => void;
 }
@@ -105,13 +139,17 @@ export const useGameStore = create<GameStore>((set) => {
   messages: [],
   addMessage: (msg) => set((state) => ({ messages: [...state.messages, msg] })),
 
+  activePower: null,
+  setActivePower: (power) => set({ activePower: power }),
+
   resetStore: () => set({ 
     room: null, 
     myFleet: [], 
     currentTurnId: null, 
     round: 1, 
     winnerId: null,
-    messages: []
+    messages: [],
+    activePower: null
   })
   };
 });

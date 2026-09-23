@@ -1,13 +1,14 @@
 import { Socket, Server } from 'socket.io';
 import { RoomManager } from './RoomManager';
+import { PowerManager } from './PowerManager';
 import { ShipPlacement, AttackResult, Player } from '../types';
 
 export class GameManager {
   private turnTimers: Map<string, NodeJS.Timeout> = new Map();
 
-  constructor(private io: Server, private roomManager: RoomManager) {}
+  constructor(private io: Server, private roomManager: RoomManager, private powerManager: PowerManager) {}
 
-  private clearTurnTimer(roomId: string) {
+  public clearTurnTimer(roomId: string) {
       if (this.turnTimers.has(roomId)) {
           clearTimeout(this.turnTimers.get(roomId)!);
           this.turnTimers.delete(roomId);
@@ -62,6 +63,7 @@ export class GameManager {
     console.log(`[deployFleet] allDeployed: ${allDeployed}. Ready status: ${room.players.map(p => `${p.nickname}:${p.ready}`).join(', ')}`);
     if (allDeployed) {
       room.gameState = 'PLAYING';
+      this.powerManager.generatePowerCells(room);
       // reset ready state for next phase if needed
       room.players.forEach(p => p.ready = false);
       room.turnStartTime = Date.now();
@@ -93,7 +95,7 @@ export class GameManager {
     this.io.to(room.roomId).emit('room:update', this.roomManager.sanitizeRoom(room));
   }
 
-  advanceTurn(room: any): number {
+  public advanceTurn(room: any): number {
       room.turnMisses = []; // Reset misses for the next player
       let nextTurnIndex = room.currentTurnIndex;
       for(let i=1; i <= room.players.length; i++) {
@@ -109,6 +111,8 @@ export class GameManager {
       room.currentTurnIndex = nextTurnIndex;
       room.currentTargetId = null;
       room.turnStartTime = Date.now();
+      
+      this.powerManager.cleanExpiredEffects(room);
       this.startTurnTimer(room);
       return nextTurnIndex;
   }
@@ -176,6 +180,7 @@ export class GameManager {
     }
 
     let hit = false;
+    let blocked = false;
     let sunkShip: string | undefined = undefined;
 
     // Evaluate attack
@@ -184,6 +189,13 @@ export class GameManager {
       
       const cellIndex = ship.cells.findIndex(c => c.x === data.x && c.y === data.y);
       if (cellIndex !== -1) {
+        const shieldIndex = room.activeEffects.findIndex(e => e.type === 'SHIELD' && e.targetId === targetPlayer.id);
+        if (shieldIndex !== -1) {
+            room.activeEffects.splice(shieldIndex, 1);
+            blocked = true;
+            break; // Blocked, no damage
+        }
+
         hit = true;
         ship.hits.push({ x: data.x, y: data.y });
         
@@ -196,7 +208,7 @@ export class GameManager {
       }
     }
 
-    const shotResult = hit ? 'hit' : 'miss';
+    const shotResult = blocked ? 'blocked' : hit ? 'hit' : 'miss';
     
     currentPlayer.shots.push({
         x: data.x,
@@ -207,13 +219,12 @@ export class GameManager {
 
     if (targetPlayer.remainingShips === 0) {
         targetPlayer.eliminated = true;
-        // If they are eliminated, we don't need to track misses against them anymore
         if (!room.turnMisses.includes(targetPlayer.id)) {
              room.turnMisses.push(targetPlayer.id);
         }
     }
 
-    if (shotResult === 'miss') {
+    if (shotResult === 'miss' || shotResult === 'blocked') {
         room.turnMisses.push(targetPlayer.id);
     }
 
@@ -224,7 +235,12 @@ export class GameManager {
     let nextTurnIndex = room.currentTurnIndex;
     
     if (!canStillAttack) {
-        nextTurnIndex = this.advanceTurn(room);
+        if (currentPlayer.bonusAttacks > 0) {
+            currentPlayer.bonusAttacks -= 1;
+            room.turnMisses = []; // Reset misses to grant another full attack turn
+        } else {
+            nextTurnIndex = this.advanceTurn(room);
+        }
     }
 
     const alivePlayers = room.players.filter(p => !p.eliminated);

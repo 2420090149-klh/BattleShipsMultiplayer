@@ -5,6 +5,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { RoomManager } from './game/RoomManager';
 import { GameManager } from './game/GameManager';
+import { PowerManager } from './game/PowerManager';
 
 dotenv.config();
 
@@ -21,7 +22,8 @@ app.use(cors());
 app.use(express.json());
 
 const roomManager = new RoomManager();
-const gameManager = new GameManager(io, roomManager);
+const powerManager = new PowerManager(io, roomManager);
+const gameManager = new GameManager(io, roomManager, powerManager);
 
 io.on('connection', (socket) => {
   const sessionId = socket.handshake.auth.sessionId;
@@ -81,6 +83,14 @@ io.on('connection', (socket) => {
 
   socket.on('game:setTarget', (data) => {
     gameManager.handleSetTarget(socket, data);
+  });
+
+  socket.on('game:collectPower', (data) => {
+    powerManager.handleCollectPower(socket, data);
+  });
+
+  socket.on('game:usePower', (data) => {
+    powerManager.handleUsePower(socket, data, (room) => gameManager.advanceTurn(room), (roomId) => gameManager.clearTurnTimer(roomId));
   });
 
   socket.on('disconnect', () => {
