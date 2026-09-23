@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { socket } from './socket';
 import { useGameStore } from './store/useGameStore';
@@ -8,9 +8,11 @@ import DeploymentPage from './pages/DeploymentPage';
 import GamePage from './pages/GamePage';
 import ResultsPage from './pages/ResultsPage';
 import ChatBox from './components/ChatBox';
+import { CinematicIntro } from './components/CinematicIntro';
 
 function App() {
   const { sessionId, setSocket, setRoom, setCurrentTurnId, setRound, setWinnerId, setCurrentPlayerId, setMyFleet } = useGameStore();
+  const [isIntroComplete, setIsIntroComplete] = useState(false);
 
   useEffect(() => {
     socket.auth = { sessionId };
@@ -88,8 +90,10 @@ function App() {
   }, [setRoom, setCurrentPlayerId, setCurrentTurnId, setRound, setWinnerId]);
 
   return (
-    <Router>
-      <div className="min-h-screen bg-navy-900 text-white overflow-hidden font-sans relative">
+    <>
+      {!isIntroComplete && <CinematicIntro onComplete={() => setIsIntroComplete(true)} />}
+      <Router>
+        <div className="min-h-screen bg-navy-900 text-white overflow-hidden font-sans relative">
         <div className="scanlines"></div>
         <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -101,6 +105,7 @@ function App() {
         <ChatBox />
       </div>
     </Router>
+    </>
   );
 }
 
