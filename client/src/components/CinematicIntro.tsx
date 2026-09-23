@@ -31,7 +31,13 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onComplete }) =>
 
   return (
     <div 
-      className={`fixed inset-0 z-[9999] bg-[#000a14] text-white flex items-center justify-center transition-opacity duration-500 ${isFadingOut ? 'opacity-0' : 'opacity-100'}`}
+      className="fixed inset-0 z-[9999] bg-[#000a14] text-white flex items-center justify-center"
+      style={{
+         opacity: isFadingOut ? 0 : 1,
+         transition: 'opacity 500ms ease-in-out',
+         // Force hardware acceleration on the container
+         transform: 'translateZ(0)'
+      }}
     >
       {/* Video Background */}
       <video
@@ -40,10 +46,11 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onComplete }) =>
         muted
         playsInline
         preload="auto"
+        disablePictureInPicture
         onEnded={handleComplete}
         onError={handleError}
-        className="absolute inset-0 w-full h-full object-cover"
-        poster="/cinematic/poster.jpg" // Optional poster if missing it just shows background
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none transform-gpu"
+        style={{ backfaceVisibility: 'hidden' }}
       >
         <source src="/cinematic/battleships-intro.mp4" type="video/mp4" />
       </video>
@@ -59,7 +66,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onComplete }) =>
       <button 
          onClick={handleComplete}
          aria-label="Skip cinematic intro"
-         className="absolute top-6 right-6 z-50 bg-black/40 backdrop-blur-md text-white/80 hover:text-white hover:bg-black/60 text-xs md:text-sm tracking-widest font-bold px-4 py-2 border border-white/20 rounded-md transition-all cursor-pointer"
+         className="absolute top-6 right-6 z-50 bg-black/40 backdrop-blur-md text-white/80 hover:text-white hover:bg-black/60 text-xs md:text-sm tracking-widest font-bold px-4 py-2 border border-white/20 rounded-md transition-all cursor-pointer transform-gpu"
       >
          SKIP INTRO
       </button>
