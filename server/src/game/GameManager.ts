@@ -21,18 +21,27 @@ export class GameManager {
       this.clearTurnTimer(room.roomId);
       
       const timer = setTimeout(() => {
-          // Time's up! Kick the current player
           const currentPlayer = room.players[room.currentTurnIndex];
           if (currentPlayer && !currentPlayer.eliminated) {
-              const socketId = currentPlayer.socketId;
-              const socket = this.io.sockets.sockets.get(socketId);
-              if (socket) {
-                  // Simulate them leaving the match due to AFK
-                  socket.emit('game:error', { message: 'YOU WERE KICKED FOR INACTIVITY' });
-                  socket.emit('game:kicked');
-                  this.handleLeave({ id: socketId } as any); // mock socket just for id
+              currentPlayer.afkCount = (currentPlayer.afkCount || 0) + 1;
+              const socket = this.io.sockets.sockets.get(currentPlayer.socketId);
+              
+              if (currentPlayer.afkCount >= 2) {
+                  if (socket) {
+                      socket.emit('game:error', { message: 'YOU WERE KICKED FOR INACTIVITY' });
+                      socket.emit('game:kicked');
+                  }
+                  this.handleLeave({ id: currentPlayer.socketId } as any);
               } else {
-                  this.handleLeave({ id: socketId } as any);
+                  if (socket) {
+                      socket.emit('game:error', { message: 'TURN SKIPPED DUE TO INACTIVITY' });
+                  }
+                  const nextIndex = this.advanceTurn(room);
+                  this.io.to(room.roomId).emit('game:attackResult', {
+                      x: -1, y: -1, result: 'miss', targetId: currentPlayer.id, attackerId: currentPlayer.id,
+                      eliminatedTarget: false, nextTurnId: room.players[nextIndex].id,
+                      room: this.roomManager.sanitizeRoom(room)
+                  });
               }
           }
       }, 40000); // 40 seconds
@@ -258,6 +267,18 @@ export class GameManager {
         nextTurnId: room.players[nextTurnIndex].id,
         room: this.roomManager.sanitizeRoom(room)
     };
+
+    // Battle Feed
+    let feedMsg = '';
+    if (targetPlayer.eliminated) feedMsg = `☠ ${targetPlayer.nickname} HAS BEEN ELIMINATED`;
+    else if (sunkShip) feedMsg = `💥 ${currentPlayer.nickname} DESTROYED ${targetPlayer.nickname}'S ${sunkShip.toUpperCase()}`;
+    else if (shotResult === 'hit') feedMsg = `⚡ ${currentPlayer.nickname} HIT ${targetPlayer.nickname}`;
+    else if (shotResult === 'miss') feedMsg = `💦 ${currentPlayer.nickname} MISSED ${targetPlayer.nickname}`;
+    else if (shotResult === 'blocked') feedMsg = `🛡️ ${targetPlayer.nickname}'S SHIELD BLOCKED ${currentPlayer.nickname}'S SHOT`;
+
+    if (feedMsg) {
+        this.io.to(room.roomId).emit('room:chat', { sender: 'SYSTEM', senderId: 'system', text: feedMsg, timestamp: Date.now() });
+    }
 
     this.io.to(room.roomId).emit('game:attackResult', result);
 

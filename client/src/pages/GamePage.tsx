@@ -338,7 +338,10 @@ export default function GamePage() {
            <div className="glass-panel border-4 p-4 rounded-xl mb-6 shadow-xl border-neon-blue/30 w-full flex flex-col items-center">
              {me && renderGrid(me, true)}
              {me?.eliminated && (
-                <div className="mt-4 text-neon-red font-bold tracking-widest text-xl text-center py-4">FLEET DESTROYED</div>
+                <div className="mt-4 text-neon-red font-bold tracking-widest text-xl text-center py-4 bg-red-900/40 rounded border border-red-500 shadow-[0_0_20px_rgba(255,0,0,0.5)] w-full uppercase">
+                   ☠ SPECTATOR MODE<br/>
+                   <span className="text-sm font-normal mt-2 block text-white">YOUR FLEET HAS BEEN DESTROYED</span>
+                </div>
              )}
              {me && renderMiniFleet(me)}
              {renderInventory()}

@@ -51,10 +51,14 @@ export class PowerManager {
     const cell = player.powerCells.find(pc => pc.x === data.x && pc.y === data.y);
     if (cell && !cell.collected) {
       cell.collected = true;
-      player.inventory.push(cell.power);
+      if (player.inventory.length < 3) {
+          player.inventory.push(cell.power);
+          socket.emit('game:powerCollected', { x: data.x, y: data.y, power: cell.power });
+          this.io.to(room.roomId).emit('room:chat', { sender: 'SYSTEM', senderId: 'system', text: `🔵 ${player.nickname} ACQUIRED ${cell.power.replace('_', ' ')}`, timestamp: Date.now() });
+      } else {
+          socket.emit('game:powerCollected', { x: data.x, y: data.y, power: 'INVENTORY_FULL' });
+      }
       
-      // Notify player they got a power
-      socket.emit('game:powerCollected', { x: data.x, y: data.y, power: cell.power });
       // Update room for everyone (will sync that cell is collected, removing shimmer)
       this.io.to(room.roomId).emit('room:update', this.roomManager.sanitizeRoom(room));
     }
