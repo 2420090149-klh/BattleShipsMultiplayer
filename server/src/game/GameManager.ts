@@ -1,10 +1,12 @@
 import { Socket, Server } from 'socket.io';
 import { RoomManager } from './RoomManager';
 import { PowerManager } from './PowerManager';
+import { MemeManager } from './MemeManager';
 import { ShipPlacement, AttackResult, Player } from '../types';
 
 export class GameManager {
   private turnTimers: Map<string, NodeJS.Timeout> = new Map();
+  private memeManager: MemeManager = new MemeManager();
 
   constructor(private io: Server, private roomManager: RoomManager, private powerManager: PowerManager) {}
 
@@ -258,6 +260,33 @@ export class GameManager {
     };
 
     this.io.to(room.roomId).emit('game:attackResult', result);
+
+    // Evaluate Meme Reaction
+    let memeCategory: 'hit' | 'miss' | 'ship-destroyed' | 'eliminated' | 'victory' | null = null;
+    if (alivePlayers.length <= 1) {
+        memeCategory = 'victory';
+    } else if (targetPlayer.eliminated) {
+        memeCategory = 'eliminated';
+    } else if (sunkShip) {
+        memeCategory = 'ship-destroyed';
+    } else if (shotResult === 'hit') {
+        memeCategory = 'hit';
+    } else if (shotResult === 'miss') {
+        memeCategory = 'miss';
+    }
+
+    if (memeCategory) {
+        const reactionId = this.memeManager.evaluateEvent(memeCategory);
+        if (reactionId) {
+            this.io.to(room.roomId).emit('game:memeReaction', {
+                reactionId,
+                category: memeCategory,
+                triggeredBy: currentPlayer.nickname,
+                targetPlayer: targetPlayer.nickname,
+                timestamp: Date.now()
+            });
+        }
+    }
 
     if (alivePlayers.length <= 1) {
         this.clearTurnTimer(room.roomId);

@@ -74,6 +74,10 @@ function App() {
       useGameStore.getState().addMessage(msg);
     });
 
+    socket.on('game:memeReaction', (data) => {
+      useGameStore.getState().setMemeReaction(data);
+    });
+
     return () => {
       socket.disconnect();
       socket.off('room:joined');
@@ -86,6 +90,7 @@ function App() {
       socket.off('game:error');
       socket.off('game:over');
       socket.off('room:chat');
+      socket.off('game:memeReaction');
     };
   }, [setRoom, setCurrentPlayerId, setCurrentTurnId, setRound, setWinnerId]);
 

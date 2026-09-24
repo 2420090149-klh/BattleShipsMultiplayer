@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { socket } from '../socket';
 import { useGameStore } from '../store/useGameStore';
 import { ShipGraphic } from '../components/ShipGraphic';
+import { MemeOverlay } from '../components/MemeOverlay';
 import { Shield, ShieldAlert, Crosshair, Radar, Zap, Target, Eye, Move, Ghost, Cpu, Bomb } from 'lucide-react';
 
 const GRID_SIZE = 10;
@@ -389,7 +390,8 @@ export default function GamePage() {
              })}
            </div>
         </div>
-
+        
+        <MemeOverlay />
       </div>
     </div>
   );

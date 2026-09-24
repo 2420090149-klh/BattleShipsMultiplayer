@@ -97,6 +97,9 @@ interface GameStore {
   activePower: PowerType | null;
   setActivePower: (power: PowerType | null) => void;
 
+  memeReaction: any | null;
+  setMemeReaction: (meme: any | null) => void;
+
   resetStore: () => void;
 }
 
@@ -142,6 +145,9 @@ export const useGameStore = create<GameStore>((set) => {
   activePower: null,
   setActivePower: (power) => set({ activePower: power }),
 
+  memeReaction: null,
+  setMemeReaction: (meme) => set({ memeReaction: meme }),
+
   resetStore: () => set({ 
     room: null, 
     myFleet: [], 
@@ -149,7 +155,8 @@ export const useGameStore = create<GameStore>((set) => {
     round: 1, 
     winnerId: null,
     messages: [],
-    activePower: null
+    activePower: null,
+    memeReaction: null
   })
   };
 });
