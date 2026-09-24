@@ -47,7 +47,7 @@ export const SERVER_MEME_MANIFEST: MemeConfig[] = [
 export class MemeManager {
     private recentMemes: string[] = [];
     private lastMemeTime: number = 0;
-    private readonly COOLDOWN_MS = 8000;
+    private readonly COOLDOWN_MS = 2000; // Lowered for testing
 
     public evaluateEvent(category: 'hit' | 'miss' | 'ship-destroyed' | 'eliminated' | 'victory'): string | null {
         const now = Date.now();
@@ -55,12 +55,12 @@ export class MemeManager {
             return null; // On cooldown
         }
 
-        let chance = 0;
+        let chance = 1.0; // 100% trigger for testing
         switch (category) {
-            case 'hit': chance = 0.3; break;
-            case 'miss': chance = 0.2; break;
-            case 'ship-destroyed': chance = 0.85; break;
-            case 'eliminated': chance = 0.95; break;
+            case 'hit': chance = 1.0; break;
+            case 'miss': chance = 1.0; break;
+            case 'ship-destroyed': chance = 1.0; break;
+            case 'eliminated': chance = 1.0; break;
             case 'victory': chance = 1.0; break;
         }
 

@@ -249,9 +249,15 @@ export class GameManager {
         if (currentPlayer.bonusAttacks > 0) {
             currentPlayer.bonusAttacks -= 1;
             room.turnMisses = []; // Reset misses to grant another full attack turn
+            room.turnStartTime = Date.now();
+            this.startTurnTimer(room);
         } else {
             nextTurnIndex = this.advanceTurn(room);
         }
+    } else {
+        // They get to shoot again! Reset their timer so they have 40s for the combo.
+        room.turnStartTime = Date.now();
+        this.startTurnTimer(room);
     }
 
     const alivePlayers = room.players.filter(p => !p.eliminated);

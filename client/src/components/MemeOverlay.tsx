@@ -21,6 +21,14 @@ export function MemeOverlay() {
             timeoutRef.current = setTimeout(() => {
                 handleClose();
             }, duration);
+
+            // Attempt to force play
+            setTimeout(() => {
+                if (videoRef.current) {
+                    videoRef.current.volume = 1.0;
+                    videoRef.current.play().catch(e => console.log('Meme video autoplay blocked:', e));
+                }
+            }, 100);
         }
     }, [memeReaction]);
 
