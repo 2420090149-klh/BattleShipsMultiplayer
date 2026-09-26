@@ -28,8 +28,11 @@ export default function GamePage() {
           return;
       }
       
+      const localStartTime = Date.now();
+      setTimeLeft(40);
+
       const interval = setInterval(() => {
-          const elapsed = Math.floor((Date.now() - (room as any).turnStartTime) / 1000);
+          const elapsed = Math.floor((Date.now() - localStartTime) / 1000);
           const remaining = Math.max(0, 40 - elapsed);
           setTimeLeft(remaining);
       }, 1000);
