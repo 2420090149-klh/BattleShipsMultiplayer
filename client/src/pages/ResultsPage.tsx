@@ -12,7 +12,7 @@ export default function ResultsPage() {
       
       const handleRematch = () => {
           if (room?.roomId) {
-              navigate(`/lobby/${room.roomId}`);
+              navigate(`/room/${room.roomId}`);
           }
       };
 
