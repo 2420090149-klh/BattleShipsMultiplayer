@@ -129,7 +129,7 @@ export default function GamePage() {
                                   else setActivePower(powerType as any);
                                   
                                   // Some powers are instant and don't need targeting mode
-                                  if (['DOUBLE_STRIKE', 'SHIELD', 'GHOST_FLEET'].includes(powerType)) {
+                                  if (['DOUBLE_STRIKE', 'SHIELD', 'GHOST_FLEET', 'RELOCATION'].includes(powerType)) {
                                       socket.emit('game:usePower', { type: powerType });
                                       setActivePower(null);
                                   }

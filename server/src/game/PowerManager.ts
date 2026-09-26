@@ -104,8 +104,7 @@ export class PowerManager {
         break;
 
       case 'RELOCATION':
-        if (!data.newCells || data.newCells.length === 0) return socket.emit('game:error', { message: 'INVALID RELOCATION' });
-        this.handleRelocation(room, player, data.newCells);
+        this.handleRelocation(room, player);
         socket.emit('game:powerResult', { type: 'RELOCATION', message: 'EMERGENCY RELOCATION COMPLETE' });
         endTurn = true;
         break;
@@ -183,19 +182,48 @@ export class PowerManager {
       }
   }
 
-  private handleRelocation(room: Room, player: Player, newCells: Coordinate[]) {
-      const length = newCells.length;
-      const ship = player.fleet.find(s => s.cells.length === length && !s.sunk);
+  private handleRelocation(room: Room, player: Player, newCells?: Coordinate[]) {
+      // Find a ship that is damaged but not sunk. If none, pick any alive ship.
+      let ship = player.fleet.find(s => s.hits.length > 0 && !s.sunk);
+      if (!ship) ship = player.fleet.find(s => !s.sunk);
       if (!ship) return;
+      
+      const length = ship.cells.length;
+      let validCells: Coordinate[] = [];
+      let found = false;
+
+      // Try random placements
+      for (let attempts = 0; attempts < 100 && !found; attempts++) {
+          const isVertical = Math.random() > 0.5;
+          const startX = Math.floor(Math.random() * (isVertical ? 10 : 10 - length + 1));
+          const startY = Math.floor(Math.random() * (isVertical ? 10 - length + 1 : 10));
+          
+          const testCells: Coordinate[] = [];
+          for (let i = 0; i < length; i++) {
+              testCells.push({ x: startX + (isVertical ? 0 : i), y: startY + (isVertical ? i : 0) });
+          }
+
+          // Check for collision with OTHER ships
+          const collision = testCells.some(tc => 
+              player.fleet.some(s => s !== ship && s.cells.some(sc => sc.x === tc.x && sc.y === tc.y))
+          );
+
+          if (!collision) {
+              validCells = testCells;
+              found = true;
+          }
+      }
+
+      if (!found) return; // Could not relocate
       
       const newHits: Coordinate[] = [];
       ship.hits.forEach(oldHit => {
           const idx = ship.cells.findIndex(c => c.x === oldHit.x && c.y === oldHit.y);
-          if (idx !== -1 && newCells[idx]) {
-              newHits.push(newCells[idx]);
+          if (idx !== -1 && validCells[idx]) {
+              newHits.push(validCells[idx]);
           }
       });
-      ship.cells = newCells;
+      ship.cells = validCells;
       ship.hits = newHits;
   }
 
